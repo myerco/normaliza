@@ -56,6 +56,8 @@ const elements = {
   panel: document.getElementById('info-panel'),
   cityStage: document.querySelector('.city-stage'),
   instructionsRoot: document.getElementById('instructions-root'),
+  helpRoot: document.getElementById('help-root'),
+  confirmRoot: document.getElementById('confirm-root'),
   startButton: document.getElementById('btn-start')
 };
 
@@ -627,7 +629,11 @@ function handleGlobalKeydown(event) {
     return;
   }
 
-  if (elements.instructionsRoot.childElementCount > 0) {
+  if (
+    elements.instructionsRoot.childElementCount > 0 ||
+    elements.helpRoot?.childElementCount > 0 ||
+    elements.confirmRoot?.childElementCount > 0
+  ) {
     return;
   }
 
@@ -676,7 +682,7 @@ function showFatalError(error) {
 
   const message = document.createElement('p');
   message.append(
-    'Verifique se os arquivos data/city.json, data/phases/fase-1.json, data/phases/fase-2.json, data/phases/fase-3.json e data/missions/administracao.json estão disponíveis e se o servidor local foi iniciado. '
+    'Verifique se os arquivos data/city.json, data/phases/fase-1.json, data/phases/fase-2.json, data/phases/fase-3.json, data/missions/administracao.json, data/glossary.json e data/tips.json estão disponíveis e se o servidor local foi iniciado. '
   );
 
   const detail = document.createElement('code');

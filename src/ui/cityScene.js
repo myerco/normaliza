@@ -9,6 +9,12 @@ export function renderCity(svg, data, { onSelect } = {}) {
   const { width, height } = city.viewport;
   svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
   svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+  svg.setAttribute(
+    'aria-label',
+    `Cidade isométrica com os edifícios ${city.buildings
+      .map((building) => building.name)
+      .join(', ')}`
+  );
   clear(svg);
 
   const defs = svgEl('defs');
@@ -160,7 +166,7 @@ export function setBuildingNormalized(svg, buildingId, normalized, label = '1FN'
     const baseLabel = group.dataset.baseLabel || group.getAttribute('aria-label') || '';
     const shortLabel = baseLabel.split(',')[0] || baseLabel;
     const badgeText = group.querySelector('.building__badge-text');
-    const formLabel = label === '2FN' ? 'Segunda Forma Normal' : 'Primeira Forma Normal';
+    const formLabel = normalFormLabel(label);
 
     group.dataset.baseLabel = baseLabel;
 
@@ -201,8 +207,7 @@ function createBuildingGroup(building, index, onSelect, options = {}) {
     style: `--build-index: ${index};`
   });
   const descriptor = `Edifício ${building.name}, ${building.recordCount} registros e ${building.attributes.length} atributos`;
-  const formLabel =
-    (building.badgeLabel || '1FN') === '2FN' ? 'Segunda Forma Normal' : 'Primeira Forma Normal';
+  const formLabel = normalFormLabel(building.badgeLabel || '1FN');
 
   if (interactive) {
     group.setAttribute('tabindex', '0');
@@ -465,6 +470,16 @@ function buildBadge(building) {
 
 function getLabelWidth(building) {
   return Math.max(142, building.name.length * 15 + 32);
+}
+
+function normalFormLabel(label) {
+  const labels = {
+    '1FN': 'Primeira Forma Normal',
+    '2FN': 'Segunda Forma Normal',
+    '3FN': 'Terceira Forma Normal'
+  };
+
+  return labels[label] || 'Primeira Forma Normal';
 }
 
 function dependencyPath(from, to) {

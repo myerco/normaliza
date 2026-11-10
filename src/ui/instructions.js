@@ -114,6 +114,7 @@ export function openInstructions() {
   function onKeydown(event) {
     if (event.key === 'Escape') {
       event.preventDefault();
+      event.stopPropagation();
       close();
       return;
     }

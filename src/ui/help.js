@@ -155,6 +155,7 @@ export function openHelp({ glossary, tips, context = 'general' }) {
   function onKeydown(event) {
     if (event.key === 'Escape') {
       event.preventDefault();
+      event.stopPropagation();
       close();
       return;
     }

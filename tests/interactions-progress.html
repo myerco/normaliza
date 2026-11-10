@@ -179,6 +179,30 @@
       check('DEPARTAMENTO é recriado após reload', Boolean(doc.querySelector('.building[data-building-id="departamento"]')));
       check('relacionamentos são recriados após reload', doc.querySelectorAll('.city-dependency-link').length === 3);
 
+      const cityLabel = doc.getElementById('city-svg').getAttribute('aria-label');
+      check(
+        'cidade anuncia todos os edifícios no rótulo acessível',
+        cityLabel.includes('PEDIDO') &&
+          cityLabel.includes('PRODUTO') &&
+          cityLabel.includes('CLIENTE') &&
+          cityLabel.includes('FUNCIONÁRIO')
+      );
+      check('PEDIDO anuncia 1FN no rótulo acessível', doc.querySelector('.building[data-building-id="pedido"]').getAttribute('aria-label').includes('Primeira Forma Normal'));
+      check('PRODUTO anuncia 2FN no rótulo acessível', doc.querySelector('.building[data-building-id="produto"]').getAttribute('aria-label').includes('Segunda Forma Normal'));
+      check('FUNCIONÁRIO anuncia 3FN no rótulo acessível', doc.querySelector('.building[data-building-id="funcionario"]').getAttribute('aria-label').includes('Terceira Forma Normal'));
+      check('DEPARTAMENTO anuncia 3FN no rótulo acessível', doc.querySelector('.building[data-building-id="departamento"]').getAttribute('aria-label').includes('Terceira Forma Normal'));
+      const funcionarioBadgeRect = doc.querySelector('.building[data-building-id="funcionario"] .building__badge').getBoundingClientRect();
+      const departamentoGroupRect = doc.querySelector('.building[data-building-id="departamento"]').getBoundingClientRect();
+      const overlaps = (first, second) =>
+        first.left < second.right &&
+        first.right > second.left &&
+        first.top < second.bottom &&
+        first.bottom > second.top;
+      check(
+        'selo 3FN de FUNCIONÁRIO não fica coberto pela extensão DEPARTAMENTO',
+        !overlaps(funcionarioBadgeRect, departamentoGroupRect)
+      );
+
       doc.querySelector('.panel__progress .btn--help').click();
       await waitFor(() => doc.querySelector('#help-root .help-dialog'), 'ajuda aberta');
       check('ajuda abre com título', doc.querySelector('#help-root .modal__title').textContent.includes('Ajuda'));
@@ -192,6 +216,44 @@
       doc.querySelector('#help-root .help-dialog .icon-button').click();
       await waitFor(() => !doc.querySelector('#help-root .help-dialog'), 'ajuda fechada');
       check('ajuda fecha', true);
+
+      doc
+        .querySelector('.building[data-building-id="pedido"]')
+        .dispatchEvent(new win.MouseEvent('click', { bubbles: true, cancelable: true }));
+      await waitFor(
+        () => doc.querySelector('.building[data-building-id="pedido"]').classList.contains('is-selected'),
+        'edifício PEDIDO selecionado'
+      );
+      check('seleção de PEDIDO abre o painel', win.location.hash === '#/cidade/pedido');
+
+      doc.querySelector('.panel__progress .btn--help').click();
+      await waitFor(
+        () => doc.querySelector('#help-root .help-dialog'),
+        'ajuda aberta com edifício selecionado'
+      );
+      doc.dispatchEvent(new win.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      await waitFor(() => !doc.querySelector('#help-root .help-dialog'), 'ajuda fechada com Escape');
+      check(
+        'Escape na ajuda preserva o edifício selecionado',
+        doc.querySelector('.building[data-building-id="pedido"]').classList.contains('is-selected')
+      );
+      check('Escape na ajuda preserva a rota do edifício', win.location.hash === '#/cidade/pedido');
+
+      doc.querySelector('.panel__progress .btn--reset-game').click();
+      await waitFor(
+        () => doc.querySelector('#confirm-root .confirm-dialog'),
+        'confirmação aberta com edifício selecionado'
+      );
+      doc.dispatchEvent(new win.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      await waitFor(
+        () => !doc.querySelector('#confirm-root .confirm-dialog'),
+        'confirmação fechada com Escape'
+      );
+      check(
+        'Escape na confirmação preserva o edifício selecionado',
+        doc.querySelector('.building[data-building-id="pedido"]').classList.contains('is-selected')
+      );
+      check('Escape na confirmação preserva as medalhas', doc.querySelectorAll('.medal.is-earned').length === 3);
 
       win.location.hash = '#/fase/centro-de-distribuicao';
       await waitFor(

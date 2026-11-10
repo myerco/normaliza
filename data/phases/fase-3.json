@@ -113,7 +113,7 @@
         "description": "Departamentos e suas localizações após a decomposição da 3FN.",
         "recordCount": 2,
         "attributes": ["departamento", "localizacao"],
-        "position": { "x": 450, "y": 320 },
+        "position": { "x": 120, "y": 300 },
         "size": { "width": 100, "depth": 80, "height": 90 },
         "color": "#f15bb5",
         "badgeLabel": "3FN"
