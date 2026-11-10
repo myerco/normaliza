@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Testes de interação — NORMALIZA!</title>
+  <style>
+    html,
+    body {
+      margin: 0;
+      background: #07111d;
+      color: #f7f1e3;
+      font-family: "Segoe UI", system-ui, sans-serif;
+    }
+
+    main {
+      padding: 1rem;
+    }
+
+    iframe {
+      width: 1200px;
+      max-width: 100%;
+      height: 800px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      background: #0b1622;
+    }
+
+    pre {
+      padding: 1rem;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      white-space: pre-wrap;
+    }
+
+    body[data-interaction-status="pass"] #out {
+      border-left: 4px solid #2a9d8f;
+    }
+
+    body[data-interaction-status="fail"] #out {
+      border-left: 4px solid #e76f51;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Testes de interação do NORMALIZA!</h1>
+    <p id="summary">Executando…</p>
+    <iframe id="app-frame" title="Aplicação NORMALIZA! para testes de interação"></iframe>
+    <pre id="out"></pre>
+  </main>
+
+  <script>
+    const frame = document.getElementById('app-frame');
+    const summary = document.getElementById('summary');
+    const out = document.getElementById('out');
+    const checks = [];
+
+    frame.addEventListener('load', () => {
+      run().catch((error) => {
+        checks.push({ name: 'execução geral', ok: false, detail: String(error && error.stack || error) });
+        finish(error);
+      });
+    });
+
+    frame.src = '../index.html';
+
+    async function run() {
+      const win = frame.contentWindow;
+      const doc = frame.contentDocument;
+
+      await waitFor(
+        () => doc.documentElement.dataset.appReady === 'true' && doc.getElementById('btn-start'),
+        'aplicação inicializada'
+      );
+      check('tela inicial exibe o título', doc.querySelector('.splash__title').textContent.includes('NORMALIZA'));
+      check('tela inicial tem menu', Boolean(doc.getElementById('btn-start')) && Boolean(doc.getElementById('btn-how')));
+
+      doc.getElementById('btn-start').click();
+      await waitFor(() => !doc.getElementById('game-screen').hidden && doc.querySelectorAll('.building').length === 4, 'cidade construída');
+      check('rota da cidade ativa', win.location.hash === '#/cidade');
+      check('HUD mostra a cidade', doc.querySelector('.hud__phase-name').textContent === 'Cidade dos dados');
+      check('HUD mostra pontuação zero', doc.querySelector('.hud__score-value').textContent === '0 pts');
+      check('cidade tem quatro edifícios', doc.querySelectorAll('.building').length === 4);
+      check('cidade tem duas ruas', doc.querySelectorAll('.road__casing').length === 2);
+
+      await waitFor(
+        () => doc.getElementById('city-svg').classList.contains('is-built'),
+        'animação de construção iniciada'
+      );
+      check('animação de construção é disparada', true);
+
+      clickBuilding(doc, win, 'pedido');
+      await waitFor(() => doc.querySelector('.panel__title')?.textContent === 'PEDIDO', 'painel do PEDIDO');
+      check('rota do edifício ativa', win.location.hash === '#/cidade/pedido');
+      check('edifício selecionado recebe estado visual', doc.querySelector('.building[data-building-id="pedido"]').classList.contains('is-selected'));
+      check('painel mostra registros', [...doc.querySelectorAll('.panel__stat dd')].map((node) => node.textContent).join(',') === '3,6');
+      check('painel mostra seis atributos', doc.querySelectorAll('.panel__details .attribute-list code').length === 6);
+
+      doc.querySelectorAll('.city-switcher__btn')[1].click();
+      await waitFor(() => doc.querySelector('.panel__title')?.textContent === 'PRODUTO', 'atalho do painel');
+      check('atalho do painel seleciona PRODUTO', win.location.hash === '#/cidade/produto');
+      check('painel do PRODUTO tem 4 registros', doc.querySelector('.panel__stat dd').textContent === '4');
+
+      const cliente = doc.querySelector('.building[data-building-id="cliente"]');
+      cliente.focus();
+      cliente.dispatchEvent(new win.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      await waitFor(() => doc.querySelector('.panel__title')?.textContent === 'CLIENTE', 'seleção por teclado');
+      check('teclado seleciona edifício', win.location.hash === '#/cidade/cliente');
+
+      doc.dispatchEvent(new win.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      await waitFor(
+        () => win.location.hash === '#/cidade' && doc.querySelector('.panel__title')?.textContent.includes('Explore'),
+        'Escape limpa a seleção'
+      );
+      check('Escape fecha o painel', doc.querySelector('.panel__title').textContent.includes('Explore'));
+
+      doc.getElementById('btn-menu').click();
+      await waitFor(() => !doc.getElementById('splash-screen').hidden, 'retorno ao menu');
+      check('menu retorna à tela inicial', win.location.hash === '#/');
+
+      doc.getElementById('btn-how').click();
+      await waitFor(() => doc.querySelector('#instructions-root .modal__dialog'), 'modal de instruções');
+      check('modal de instruções abre', doc.querySelector('#instructions-root .modal__title').textContent === 'Como jogar');
+      doc.querySelector('#instructions-root .modal__actions .btn').click();
+      await waitFor(() => !doc.querySelector('#instructions-root .modal__dialog'), 'modal de instruções fecha');
+      check('modal de instruções fecha', true);
+
+      doc.getElementById('btn-start').click();
+      await waitFor(() => !doc.getElementById('game-screen').hidden, 'retorno à cidade após o menu');
+      clickBuilding(doc, win, 'pedido');
+      await waitFor(() => doc.querySelector('.panel__title')?.textContent === 'PEDIDO', 'painel do PEDIDO para a fase');
+      doc.querySelector('#info-panel .btn--primary').click();
+      await waitFor(
+        () => !doc.getElementById('phase-screen').hidden && doc.querySelector('.phase-shell'),
+        'fase 1 aberta'
+      );
+      check('rota da fase ativa', win.location.hash === '#/fase/centro-de-distribuicao');
+      check('HUD mostra a fase 1', doc.querySelector('.hud__phase-name').textContent.includes('Fase 1'));
+      check('fase mostra o título', doc.querySelector('.phase-title').textContent === 'Centro de Distribuição');
+      check('fase tem três caixas', doc.querySelectorAll('.order-box').length === 3);
+      check('fase tem cinco produtos', doc.querySelectorAll('.product-chip').length === 5);
+      check(
+        'ITEM_PEDIDO começa vazio',
+        doc.querySelectorAll('.data-table-card--drop tbody tr:not(.empty-row)').length === 0
+      );
+      check('pontuação da fase começa em zero', doc.querySelector('.phase-score strong').textContent.trim() === '0 / 100');
+
+      clickChip(doc, '001', 'Caneta');
+      doc.querySelector('[data-action="move"]').click();
+      await waitFor(
+        () => doc.querySelectorAll('.data-table-card--drop tbody tr:not(.empty-row)').length === 1,
+        'primeiro item movido'
+      );
+      check(
+        'item movido preserva o pedido',
+        doc.querySelector('.data-table-card--drop tbody tr:not(.empty-row)').textContent.includes('001')
+      );
+
+      doc.querySelector('[data-action="validate"]').click();
+      await waitFor(() => doc.querySelector('.phase-feedback--error'), 'feedback de erro');
+      check(
+        'validação parcial aponta produtos esquecidos',
+        doc.querySelector('.phase-feedback--error').textContent.includes('Lápis') &&
+          doc.querySelector('.phase-feedback--error').textContent.includes('Borracha') &&
+          doc.querySelector('.phase-feedback--error').textContent.includes('Régua')
+      );
+      check(
+        'validação incorreta mantém a pontuação em zero',
+        doc.querySelector('.phase-score strong').textContent.trim() === '0 / 100'
+      );
+
+      doc.querySelector('[data-action="select-all"]').click();
+      doc.querySelector('[data-action="move"]').click();
+      await waitFor(
+        () => doc.querySelectorAll('.data-table-card--drop tbody tr:not(.empty-row)').length === 5,
+        'todos os itens movidos'
+      );
+      check('cinco itens foram separados', true);
+      check(
+        'PEDIDO mostra três pedidos separados',
+        doc.querySelectorAll('.data-table-card:not(.data-table-card--drop) tbody tr:not(.empty-row)').length === 3
+      );
+
+      doc.querySelector('[data-action="validate"]').click();
+      await waitFor(() => doc.querySelector('.phase-complete'), 'conclusão da fase');
+      check('conclusão mostra evolução do edifício', Boolean(doc.querySelector('.phase-complete .evolution-building')));
+      check('animação de conclusão é exibida', Boolean(doc.querySelector('.celebration-layer')));
+      check(
+        'conclusão preserva a pontuação de qualidade',
+        doc.querySelector('.phase-complete__score strong').textContent.trim() === '90 / 100'
+      );
+      check('HUD recebe a pontuação', doc.querySelector('.hud__score-value').textContent === '90 pts');
+      check(
+        'edifício PEDIDO evolui na cidade',
+        doc.querySelector('.building[data-building-id="pedido"]').classList.contains('is-normalized')
+      );
+
+      const saved = JSON.parse(win.localStorage.getItem('normaliza:v1:progress') || '{}');
+      check('progresso da fase é persistido', saved['centro-de-distribuicao']?.completed === true);
+
+      doc.querySelector('[data-action="complete-exit"]').click();
+      await waitFor(
+        () => !doc.getElementById('city-main').hidden && doc.getElementById('phase-screen').hidden,
+        'retorno à cidade evoluída'
+      );
+      check(
+        'cidade evoluída é exibida',
+        win.location.hash === '#/cidade/pedido' &&
+          doc.querySelector('.building[data-building-id="pedido"]').classList.contains('is-normalized')
+      );
+      check(
+        'painel indica fase concluída',
+        doc.querySelector('#info-panel .panel__note--phase').textContent.includes('concluída')
+      );
+      check(
+        'painel oferece revisitar a fase',
+        doc.querySelector('#info-panel .btn--primary').textContent.includes('Revisitar')
+      );
+      check(
+        'painel mostra PEDIDO normalizado',
+        [...doc.querySelectorAll('#info-panel .panel__stat dd')].map((node) => node.textContent).join(',') === '3,2'
+      );
+
+      doc.querySelector('#info-panel .btn--primary').click();
+      await waitFor(
+        () => !doc.getElementById('phase-screen').hidden && doc.querySelector('.phase-complete'),
+        'fase concluída reaberta'
+      );
+      doc.querySelector('[data-action="complete-reset"]').click();
+      await waitFor(
+        () => !doc.querySelector('.phase-complete') && doc.querySelectorAll('.product-chip').length === 5,
+        'fase reiniciada'
+      );
+      check('reiniciar limpa a pontuação', doc.querySelector('.phase-score strong').textContent.trim() === '0 / 100');
+      check(
+        'reiniciar remove a evolução do edifício',
+        !doc.querySelector('.building[data-building-id="pedido"]').classList.contains('is-normalized')
+      );
+      await waitFor(() => {
+        const progress = JSON.parse(win.localStorage.getItem('normaliza:v1:progress') || '{}');
+        return !progress['centro-de-distribuicao'];
+      }, 'progresso da fase limpo');
+
+      doc.querySelector('[data-action="exit"]').click();
+      await waitFor(
+        () => !doc.getElementById('city-main').hidden && doc.getElementById('phase-screen').hidden,
+        'saída da fase'
+      );
+      check('saída da fase volta para a cidade', win.location.hash === '#/cidade/pedido');
+      check(
+        'painel volta a indicar fase disponível',
+        doc.querySelector('#info-panel .panel__note--phase').textContent.includes('disponível')
+      );
+      check(
+        'painel volta aos atributos originais',
+        [...doc.querySelectorAll('#info-panel .panel__stat dd')].map((node) => node.textContent).join(',') === '3,6'
+      );
+
+      finish();
+    }
+
+    function clickBuilding(doc, win, id) {
+      const group = doc.querySelector(`.building[data-building-id="${id}"]`);
+      group.dispatchEvent(new win.MouseEvent('click', { bubbles: true }));
+    }
+
+    function clickChip(doc, orderId, product) {
+      const chip = [...doc.querySelectorAll('.product-chip')].find(
+        (candidate) => candidate.dataset.orderId === orderId && candidate.dataset.product === product
+      );
+
+      if (!chip) {
+        throw new Error(`Chip não encontrado: ${orderId} ${product}`);
+      }
+
+      chip.click();
+    }
+
+    function check(name, condition) {
+      if (!condition) {
+        throw new Error(`Falhou: ${name}`);
+      }
+
+      checks.push({ name, ok: true });
+    }
+
+    function waitFor(predicate, description, timeout = 7000) {
+      return new Promise((resolve, reject) => {
+        const startedAt = Date.now();
+
+        const tick = () => {
+          try {
+            if (predicate()) {
+              resolve();
+              return;
+            }
+          } catch (error) {
+            reject(error);
+            return;
+          }
+
+          if (Date.now() - startedAt > timeout) {
+            reject(new Error(`Timeout aguardando: ${description}`));
+            return;
+          }
+
+          setTimeout(tick, 50);
+        };
+
+        tick();
+      });
+    }
+
+    function finish(error) {
+      const failed = Boolean(error) || checks.some((checkItem) => !checkItem.ok);
+      const passed = checks.filter((checkItem) => checkItem.ok).length;
+
+      document.body.dataset.interactionStatus = failed ? 'fail' : 'pass';
+      summary.textContent = failed
+        ? `Falha nos testes de interação (${passed} verificações passaram).`
+        : `Todos os testes de interação passaram (${passed} verificações).`;
+      out.textContent = JSON.stringify({ failed, checks }, null, 2);
+      document.title = failed ? 'FAIL — Interações NORMALIZA!' : 'PASS — Interações NORMALIZA!';
+    }
+  </script>
+</body>
+</html>

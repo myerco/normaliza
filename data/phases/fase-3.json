@@ -1,0 +1,129 @@
+{
+  "id": "cidade-organizada",
+  "title": "Cidade Organizada",
+  "normalForm": "3FN",
+  "sourceTable": "FUNCIONÁRIO",
+  "objective": "Identificar dependências transitivas, construir novas tabelas, definir chaves e relacionamentos e validar a decomposição.",
+  "summary": "A tabela FUNCIONÁRIO contém uma dependência transitiva: Departamento → Localização. Localização deve sair para uma tabela própria.",
+  "attributes": [
+    { "id": "cpf", "label": "CPF", "role": "key" },
+    { "id": "nome", "label": "Nome", "role": "dependent" },
+    { "id": "departamento", "label": "Departamento", "role": "determinant" },
+    { "id": "localizacao", "label": "Localização", "role": "transitive" }
+  ],
+  "candidateKey": ["cpf"],
+  "functionalDependencies": [
+    {
+      "id": "fd-nome",
+      "determinant": ["cpf"],
+      "dependent": "nome",
+      "type": "direct",
+      "label": "CPF → Nome"
+    },
+    {
+      "id": "fd-departamento",
+      "determinant": ["cpf"],
+      "dependent": "departamento",
+      "type": "direct",
+      "label": "CPF → Departamento"
+    },
+    {
+      "id": "fd-localizacao",
+      "determinant": ["departamento"],
+      "dependent": "localizacao",
+      "type": "transitive",
+      "label": "Departamento → Localização"
+    }
+  ],
+  "transitiveDependencyId": "fd-localizacao",
+  "rows": [
+    { "cpf": "111", "nome": "João", "departamento": "TI", "localizacao": "Porto Velho" },
+    { "cpf": "222", "nome": "Maria", "departamento": "RH", "localizacao": "Ji-Paraná" },
+    { "cpf": "333", "nome": "Pedro", "departamento": "TI", "localizacao": "Porto Velho" }
+  ],
+  "targetTables": [
+    {
+      "id": "funcionario",
+      "name": "FUNCIONÁRIO",
+      "attributes": ["cpf", "nome", "departamento"],
+      "primaryKey": ["cpf"],
+      "foreignKeys": [
+        {
+          "attribute": "departamento",
+          "references": {
+            "table": "departamento",
+            "attribute": "departamento"
+          }
+        }
+      ]
+    },
+    {
+      "id": "departamento",
+      "name": "DEPARTAMENTO",
+      "attributes": ["departamento", "localizacao"],
+      "primaryKey": ["departamento"],
+      "foreignKeys": []
+    }
+  ],
+  "relationships": [
+    {
+      "id": "funcionario.departamento->departamento.departamento",
+      "fromTable": "funcionario",
+      "fromAttribute": "departamento",
+      "toTable": "departamento",
+      "toAttribute": "departamento",
+      "label": "N:1"
+    }
+  ],
+  "concepts": {
+    "transitive": "Dependência transitiva: CPF → Departamento e Departamento → Localização. Como Departamento não é superchave, Localização depende transitivamente de CPF.",
+    "thirdNormalForm": "3FN: a relação está em 2FN e, para toda DF não trivial X → A, X é superchave ou A é atributo primo.",
+    "decomposition": "A decomposição separa Localização em DEPARTAMENTO, mantém CPF como chave de FUNCIONÁRIO e cria a FK Departamento."
+  },
+  "rules": [
+    "A chave primária de FUNCIONÁRIO é CPF.",
+    "CPF → Nome e CPF → Departamento são dependências diretas.",
+    "Departamento → Localização é uma dependência transitiva.",
+    "Localização não deve permanecer em FUNCIONÁRIO.",
+    "A decomposição deve preservar atributos, dependências e ser sem perda."
+  ],
+  "hints": [
+    "Localização depende de Departamento, não diretamente de CPF.",
+    "Departamento → Localização é transitiva porque Departamento não é superchave.",
+    "Construa FUNCIONÁRIO com CPF, Nome e Departamento, e DEPARTAMENTO com Departamento e Localização.",
+    "A FK é FUNCIONÁRIO.Departamento → DEPARTAMENTO.Departamento."
+  ],
+  "scoring": {
+    "pointsPerTransitive": 20,
+    "pointsPerTable": 10,
+    "pointsPerMembership": 5,
+    "pointsPerPrimaryKey": 5,
+    "pointsPerForeignKey": 5,
+    "pointsPerRelationship": 10,
+    "completionBonus": 10,
+    "wrongValidationPenalty": 10,
+    "hintPenalty": 5,
+    "max": 100
+  },
+  "cityEvolution": {
+    "buildings": [
+      {
+        "id": "departamento",
+        "name": "DEPARTAMENTO",
+        "description": "Departamentos e suas localizações após a decomposição da 3FN.",
+        "recordCount": 2,
+        "attributes": ["departamento", "localizacao"],
+        "position": { "x": 450, "y": 320 },
+        "size": { "width": 100, "depth": 80, "height": 90 },
+        "color": "#f15bb5",
+        "badgeLabel": "3FN"
+      }
+    ],
+    "links": [
+      { "from": "funcionario", "to": "departamento", "label": "N:1" }
+    ],
+    "normalizedBuildings": [
+      { "id": "funcionario", "badgeLabel": "3FN" }
+    ]
+  }
+}

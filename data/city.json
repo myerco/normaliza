@@ -1,0 +1,112 @@
+{
+  "city": {
+    "name": "Cidade Normaliza",
+    "viewport": {
+      "width": 1200,
+      "height": 800
+    },
+    "buildings": [
+      {
+        "id": "pedido",
+        "name": "PEDIDO",
+        "description": "Registros de pedidos realizados na cidade.",
+        "recordCount": 3,
+        "attributes": [
+          "id_pedido",
+          "data_pedido",
+          "id_cliente",
+          "id_produto",
+          "quantidade",
+          "valor_total"
+        ],
+        "position": {
+          "x": 600,
+          "y": 475
+        },
+        "size": {
+          "width": 150,
+          "depth": 110,
+          "height": 155
+        },
+        "color": "#e76f51"
+      },
+      {
+        "id": "produto",
+        "name": "PRODUTO",
+        "description": "Catálogo de produtos disponíveis na cidade.",
+        "recordCount": 4,
+        "attributes": [
+          "id_produto",
+          "nome_produto",
+          "categoria",
+          "preco_unitario"
+        ],
+        "position": {
+          "x": 875,
+          "y": 565
+        },
+        "size": {
+          "width": 130,
+          "depth": 100,
+          "height": 120
+        },
+        "color": "#2a9d8f"
+      },
+      {
+        "id": "cliente",
+        "name": "CLIENTE",
+        "description": "Cadastro de clientes da cidade.",
+        "recordCount": 3,
+        "attributes": [
+          "id_cliente",
+          "nome_cliente",
+          "cidade",
+          "uf",
+          "telefone"
+        ],
+        "position": {
+          "x": 150,
+          "y": 620
+        },
+        "size": {
+          "width": 130,
+          "depth": 100,
+          "height": 135
+        },
+        "color": "#e9c46a"
+      },
+      {
+        "id": "funcionario",
+        "name": "FUNCIONÁRIO",
+        "description": "Registros de funcionários da cidade.",
+        "recordCount": 3,
+        "attributes": [
+          "cpf",
+          "nome",
+          "departamento",
+          "localizacao"
+        ],
+        "position": {
+          "x": 300,
+          "y": 400
+        },
+        "size": {
+          "width": 110,
+          "depth": 80,
+          "height": 100
+        },
+        "color": "#9b5de5"
+      }
+    ],
+    "roads": [
+      {
+        "from": "pedido",
+        "to": "produto"
+      },
+      {
+        "from": "pedido",
+        "to": "cliente"
+      }
+    ]
+  }
+}

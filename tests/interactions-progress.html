@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Regressão de progresso — NORMALIZA!</title>
+  <style>
+    html,
+    body {
+      margin: 0;
+      background: #07111d;
+      color: #f7f1e3;
+      font-family: "Segoe UI", system-ui, sans-serif;
+    }
+
+    main {
+      padding: 1rem;
+    }
+
+    iframe {
+      width: 1200px;
+      max-width: 100%;
+      height: 850px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      background: #0b1622;
+    }
+
+    pre {
+      padding: 1rem;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      white-space: pre-wrap;
+    }
+
+    body[data-interaction-status="pass"] #out {
+      border-left: 4px solid #2a9d8f;
+    }
+
+    body[data-interaction-status="fail"] #out {
+      border-left: 4px solid #e76f51;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Regressão de progresso, medalhas e recuperação</h1>
+    <p id="summary">Executando…</p>
+    <iframe id="app-frame" title="Aplicação NORMALIZA! para testes de progresso"></iframe>
+    <pre id="out"></pre>
+  </main>
+
+  <script>
+    const frame = document.getElementById('app-frame');
+    const summary = document.getElementById('summary');
+    const out = document.getElementById('out');
+    const checks = [];
+    let started = false;
+
+    frame.addEventListener('load', () => {
+      if (started) {
+        return;
+      }
+      started = true;
+      run().catch((error) => {
+        checks.push({ name: 'execução geral', ok: false, detail: String(error && error.stack || error) });
+        finish(error);
+      });
+    });
+
+    frame.src = '../index.html#/cidade';
+
+    const seed = {
+      'centro-de-distribuicao': {
+        phaseId: 'centro-de-distribuicao',
+        items: [
+          { orderId: '001', product: 'Caneta' },
+          { orderId: '001', product: 'Lápis' },
+          { orderId: '002', product: 'Borracha' },
+          { orderId: '002', product: 'Régua' },
+          { orderId: '003', product: 'Caneta' }
+        ],
+        failedValidations: 0,
+        hintsUsed: 0,
+        revealedHints: 0,
+        completed: true,
+        score: 100
+      },
+      'rede-de-dependencias': {
+        phaseId: 'rede-de-dependencias',
+        dependencies: [
+          { id: 'pedido+produto->quantidade', determinant: ['pedido', 'produto'], dependent: 'quantidade', type: 'total' },
+          { id: 'produto->descricao', determinant: ['produto'], dependent: 'descricao', type: 'partial' },
+          { id: 'produto->preco', determinant: ['produto'], dependent: 'preco', type: 'partial' }
+        ],
+        tables: {
+          item_pedido: { attributes: ['pedido', 'produto', 'quantidade'], primaryKey: ['pedido', 'produto'] },
+          produto: { attributes: ['produto', 'descricao', 'preco'], primaryKey: ['produto'] }
+        },
+        failedValidations: 0,
+        hintsUsed: 0,
+        revealedHints: 0,
+        completed: true,
+        score: 100
+      },
+      'cidade-organizada': {
+        phaseId: 'cidade-organizada',
+        transitiveDependencyId: 'fd-localizacao',
+        builtTables: ['funcionario', 'departamento'],
+        tables: {
+          funcionario: {
+            attributes: ['cpf', 'nome', 'departamento'],
+            primaryKey: ['cpf'],
+            foreignKeys: ['departamento']
+          },
+          departamento: {
+            attributes: ['departamento', 'localizacao'],
+            primaryKey: ['departamento'],
+            foreignKeys: []
+          }
+        },
+        relationships: [
+          {
+            id: 'funcionario.departamento->departamento.departamento',
+            fromTable: 'funcionario',
+            fromAttribute: 'departamento',
+            toTable: 'departamento',
+            toAttribute: 'departamento'
+          }
+        ],
+        failedValidations: 0,
+        hintsUsed: 0,
+        revealedHints: 0,
+        completed: true,
+        score: 100
+      }
+    };
+
+    async function run() {
+      let win = frame.contentWindow;
+      let doc = frame.contentDocument;
+
+      await waitFor(
+        () => doc.documentElement.dataset.appReady === 'true' && doc.getElementById('city-main'),
+        'aplicação inicializada'
+      );
+
+      win.localStorage.setItem('normaliza:v1:progress', JSON.stringify(seed));
+      const reloaded = new Promise((resolve) => frame.addEventListener('load', resolve, { once: true }));
+      win.location.reload();
+      await reloaded;
+
+      await waitFor(
+        () => frame.contentDocument.documentElement.dataset.appReady === 'true' &&
+          frame.contentDocument.getElementById('city-main') &&
+          !frame.contentDocument.getElementById('city-main').hidden,
+        'progresso recuperado após recarregar'
+      );
+
+      doc = frame.contentDocument;
+      win = frame.contentWindow;
+
+      const storedAfterReload = JSON.parse(win.localStorage.getItem('normaliza:v1:progress') || '{}');
+      check(
+        'progresso salvo contém as três fases',
+        ['centro-de-distribuicao', 'rede-de-dependencias', 'cidade-organizada'].every(
+          (phaseId) => Boolean(storedAfterReload[phaseId])
+        )
+      );
+      const hudText = doc.querySelector('.hud__score-value').textContent;
+      check(`HUD recupera pontuação acumulada (${hudText})`, hudText === '300 pts');
+      check('três fases aparecem como concluídas', doc.querySelectorAll('.medal.is-earned').length === 3);
+      check('indicador de evolução chega a 100%', doc.querySelector('.progress-meter').getAttribute('aria-valuenow') === '100');
+      check('painel mostra pontuação acumulada', doc.querySelector('.panel__progress-total').textContent.includes('300'));
+      check('PEDIDO recupera evolução 1FN', doc.querySelector('.building[data-building-id="pedido"]').classList.contains('is-normalized'));
+      check('PRODUTO recupera evolução 2FN', doc.querySelector('.building[data-building-id="produto"]').classList.contains('is-normalized'));
+      check('FUNCIONÁRIO recupera evolução 3FN', doc.querySelector('.building[data-building-id="funcionario"]').classList.contains('is-normalized'));
+      check('ITEM_PEDIDO é recriado após reload', Boolean(doc.querySelector('.building[data-building-id="item_pedido"]')));
+      check('DEPARTAMENTO é recriado após reload', Boolean(doc.querySelector('.building[data-building-id="departamento"]')));
+      check('relacionamentos são recriados após reload', doc.querySelectorAll('.city-dependency-link').length === 3);
+
+      doc.querySelector('.panel__progress .btn--help').click();
+      await waitFor(() => doc.querySelector('#help-root .help-dialog'), 'ajuda aberta');
+      check('ajuda abre com título', doc.querySelector('#help-root .modal__title').textContent.includes('Ajuda'));
+      check('aba de dicas mostra contexto atual', Boolean(doc.querySelector('#help-root .help-tip-group.is-current')));
+
+      doc.querySelector('#help-root [data-help-tab="glossary"]').click();
+      await waitFor(() => doc.querySelector('#help-root .help-glossary'), 'glossário aberto');
+      check('glossário contém conceitos', doc.querySelectorAll('#help-root .glossary-card').length >= 10);
+      check('glossário explica 1FN', doc.querySelector('#help-root').textContent.includes('Primeira Forma Normal'));
+
+      doc.querySelector('#help-root .help-dialog .icon-button').click();
+      await waitFor(() => !doc.querySelector('#help-root .help-dialog'), 'ajuda fechada');
+      check('ajuda fecha', true);
+
+      win.location.hash = '#/fase/centro-de-distribuicao';
+      await waitFor(
+        () => !doc.getElementById('phase-screen').hidden &&
+          doc.querySelector('#phase-host-fase-1 .phase-complete'),
+        'fase 1 aberta'
+      );
+      const phaseReloaded = new Promise((resolve) =>
+        frame.addEventListener('load', resolve, { once: true })
+      );
+      win.location.reload();
+      await phaseReloaded;
+      await waitFor(
+        () => frame.contentDocument.documentElement.dataset.appReady === 'true' &&
+          !frame.contentDocument.getElementById('phase-screen').hidden,
+        'fase recuperada após reload'
+      );
+      doc = frame.contentDocument;
+      win = frame.contentWindow;
+      check(
+        'fase é recuperada após atualizar a página',
+        win.location.hash === '#/fase/centro-de-distribuicao' &&
+          Boolean(doc.querySelector('#phase-host-fase-1 .phase-complete'))
+      );
+      check(
+        'pontuação da fase é recuperada',
+        doc.querySelector('#phase-host-fase-1 .phase-score strong').textContent.trim() === '100 / 100'
+      );
+      win.location.hash = '#/cidade';
+      await waitFor(() => !doc.getElementById('city-main').hidden, 'retorno à cidade após recuperar fase');
+
+      doc.querySelector('.panel__progress .btn--reset-game').click();
+      await waitFor(() => doc.querySelector('#confirm-root .confirm-dialog'), 'confirmação de reset');
+      check('reset total pede confirmação', doc.querySelector('#confirm-root .modal__title').textContent.includes('Reiniciar todo o jogo'));
+
+      doc.querySelector('#confirm-root .confirm-dialog .btn--ghost').click();
+      await waitFor(() => !doc.querySelector('#confirm-root .confirm-dialog'), 'reset cancelado');
+      check('cancelar preserva o progresso', doc.querySelectorAll('.medal.is-earned').length === 3);
+
+      doc.querySelector('.panel__progress .btn--reset-game').click();
+      await waitFor(() => doc.querySelector('#confirm-root .confirm-dialog'), 'confirmação de reset novamente');
+      doc.querySelector('#confirm-root .confirm-dialog .btn--danger').click();
+
+      await waitFor(() => !doc.getElementById('splash-screen').hidden, 'retorno à tela inicial após reset');
+      check('reset total volta para a tela inicial', win.location.hash === '#/' || win.location.hash === '');
+
+      const stored = JSON.parse(win.localStorage.getItem('normaliza:v1:progress') || '{}');
+      check('reset total limpa o progresso salvo', !stored['centro-de-distribuicao'] && !stored['rede-de-dependencias'] && !stored['cidade-organizada']);
+
+      doc.getElementById('btn-start').click();
+      await waitFor(() => !doc.getElementById('game-screen').hidden, 'cidade após reset');
+      check('HUD volta a zero', doc.querySelector('.hud__score-value').textContent === '0 pts');
+      check('medalhas voltam a zero', doc.querySelectorAll('.medal.is-earned').length === 0);
+      check('painel volta a zero', doc.querySelector('.panel__progress-total').textContent.includes('0 pts'));
+      check('edifícios evoluídos são removidos', doc.querySelectorAll('.building.is-normalized').length === 0);
+      check('ITEM_PEDIDO é removido', !doc.querySelector('.building[data-building-id="item_pedido"]'));
+      check('DEPARTAMENTO é removido', !doc.querySelector('.building[data-building-id="departamento"]'));
+
+      finish();
+    }
+
+    function check(name, condition) {
+      if (!condition) {
+        throw new Error(`Falhou: ${name}`);
+      }
+
+      checks.push({ name, ok: true });
+    }
+
+    function waitFor(predicate, description, timeout = 9000) {
+      return new Promise((resolve, reject) => {
+        const startedAt = Date.now();
+
+        const tick = () => {
+          try {
+            if (predicate()) {
+              resolve();
+              return;
+            }
+          } catch (error) {
+            reject(error);
+            return;
+          }
+
+          if (Date.now() - startedAt > timeout) {
+            reject(new Error(`Timeout aguardando: ${description}`));
+            return;
+          }
+
+          setTimeout(tick, 50);
+        };
+
+        tick();
+      });
+    }
+
+    function finish(error) {
+      const failed = Boolean(error) || checks.some((checkItem) => !checkItem.ok);
+      const passed = checks.filter((checkItem) => checkItem.ok).length;
+
+      document.body.dataset.interactionStatus = failed ? 'fail' : 'pass';
+      summary.textContent = failed
+        ? `Falha na regressão de progresso (${passed} verificações passaram).`
+        : `Todos os testes de progresso passaram (${passed} verificações).`;
+      out.textContent = JSON.stringify({ failed, checks }, null, 2);
+      document.title = failed ? 'FAIL — Progresso NORMALIZA!' : 'PASS — Progresso NORMALIZA!';
+    }
+  </script>
+</body>
+</html>

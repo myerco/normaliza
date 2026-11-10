@@ -1,0 +1,130 @@
+{
+  "concepts": [
+    {
+      "id": "normalizacao",
+      "title": "Normalização",
+      "category": "Fundamentos",
+      "definition": "Processo de organizar atributos em relações que evitam redundância e anomalias de atualização, inserção e exclusão.",
+      "example": "Separar produtos de pedidos para que o mesmo produto não precise ser repetido em cada pedido."
+    },
+    {
+      "id": "atomicidade",
+      "title": "Atomicidade",
+      "category": "1FN",
+      "definition": "Cada célula deve conter um único valor indivisível.",
+      "example": "“Caneta” é atômico; “Caneta, Lápis” não é."
+    },
+    {
+      "id": "grupo-repetitivo",
+      "title": "Grupo repetitivo",
+      "category": "1FN",
+      "definition": "Célula ou conjunto de colunas que guarda vários valores para o mesmo registro.",
+      "example": "Uma linha de pedido com os produtos “Caneta, Lápis” na mesma célula."
+    },
+    {
+      "id": "1fn",
+      "title": "Primeira Forma Normal (1FN)",
+      "category": "Formas Normais",
+      "definition": "Relação com valores atômicos, sem grupos repetitivos e com registros individualizados.",
+      "example": "Cada produto de um pedido em uma linha própria em ITEM_PEDIDO."
+    },
+    {
+      "id": "df",
+      "title": "Dependência funcional",
+      "category": "Dependências",
+      "definition": "Relação X → Y em que cada valor de X determina um único valor de Y.",
+      "example": "Produto → Descrição: um produto tem uma única descrição no domínio."
+    },
+    {
+      "id": "chave-candidata",
+      "title": "Chave candidata",
+      "category": "Chaves",
+      "definition": "Conjunto mínimo de atributos que determina todos os demais atributos da relação.",
+      "example": "Em ITEM_PEDIDO, a chave candidata é (Pedido, Produto)."
+    },
+    {
+      "id": "atributo-primo",
+      "title": "Atributo primo",
+      "category": "Chaves",
+      "definition": "Atributo que participa de alguma chave candidata.",
+      "example": "Pedido e Produto são primos quando formam a chave candidata de ITEM_PEDIDO."
+    },
+    {
+      "id": "2fn",
+      "title": "Segunda Forma Normal (2FN)",
+      "category": "Formas Normais",
+      "definition": "Relação em 1FN sem dependências parciais de atributos não primos em relação a uma chave candidata.",
+      "example": "Descrição e Preço dependem apenas de Produto, então saem de ITEM_PEDIDO e vão para PRODUTO."
+    },
+    {
+      "id": "dependencia-total",
+      "title": "Dependência funcional total",
+      "category": "Dependências",
+      "definition": "O determinante é a chave inteira, não apenas parte dela.",
+      "example": "(Pedido, Produto) → Quantidade."
+    },
+    {
+      "id": "dependencia-parcial",
+      "title": "Dependência funcional parcial",
+      "category": "Dependências",
+      "definition": "Um atributo não primo depende apenas de parte de uma chave composta.",
+      "example": "Produto → Descrição, quando Produto é parte de (Pedido, Produto)."
+    },
+    {
+      "id": "3fn",
+      "title": "Terceira Forma Normal (3FN)",
+      "category": "Formas Normais",
+      "definition": "Relação em 2FN em que, para toda DF não trivial X → A, X é superchave ou A é atributo primo.",
+      "example": "Departamento → Localização é transitiva e deve sair de FUNCIONÁRIO."
+    },
+    {
+      "id": "dependencia-transitiva",
+      "title": "Dependência transitiva",
+      "category": "Dependências",
+      "definition": "X → Y e Y → Z, com Y não sendo superchave, fazendo Z depender de X por transitividade.",
+      "example": "CPF → Departamento e Departamento → Localização."
+    },
+    {
+      "id": "pk-fk",
+      "title": "Chave primária e chave estrangeira",
+      "category": "Chaves",
+      "definition": "A PK identifica cada linha; a FK referencia uma PK de outra tabela e representa o relacionamento.",
+      "example": "FUNCIONÁRIO.Departamento é FK para DEPARTAMENTO.Departamento."
+    },
+    {
+      "id": "decomposicao-sem-perda",
+      "title": "Decomposição sem perda",
+      "category": "Decomposição",
+      "definition": "A junção natural das tabelas resultantes reconstrói exatamente a relação original.",
+      "example": "Quando o atributo comum é chave de uma das tabelas, como Produto em PRODUTO."
+    },
+    {
+      "id": "preservacao-df",
+      "title": "Preservação de dependências",
+      "category": "Decomposição",
+      "definition": "Todas as DFs declaradas continuam representadas em alguma tabela após a decomposição.",
+      "example": "CPF → Nome em FUNCIONÁRIO e Departamento → Localização em DEPARTAMENTO."
+    },
+    {
+      "id": "anomalia-atualizacao",
+      "title": "Anomalia de atualização",
+      "category": "Anomalias",
+      "definition": "Dados repetidos exigem várias atualizações e podem gerar cópias inconsistentes.",
+      "example": "Atualizar a localização de TI em apenas uma linha de FUNCIONÁRIO."
+    },
+    {
+      "id": "anomalia-insercao",
+      "title": "Anomalia de inserção",
+      "category": "Anomalias",
+      "definition": "Não é possível inserir um dado independente porque ele depende de outro registro inexistente.",
+      "example": "Cadastrar um produto somente dentro de uma linha de pedido."
+    },
+    {
+      "id": "anomalia-exclusao",
+      "title": "Anomalia de exclusão",
+      "category": "Anomalias",
+      "definition": "Excluir um registro remove informações não relacionadas que estavam agrupadas nele.",
+      "example": "Excluir um pedido e perder os dados dos produtos que só apareciam nele."
+    }
+  ]
+}

@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Testes de interação da Fase 2 — NORMALIZA!</title>
+  <style>
+    html,
+    body {
+      margin: 0;
+      background: #07111d;
+      color: #f7f1e3;
+      font-family: "Segoe UI", system-ui, sans-serif;
+    }
+
+    main {
+      padding: 1rem;
+    }
+
+    iframe {
+      width: 1200px;
+      max-width: 100%;
+      height: 800px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      background: #0b1622;
+    }
+
+    pre {
+      padding: 1rem;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      white-space: pre-wrap;
+    }
+
+    body[data-interaction-status="pass"] #out {
+      border-left: 4px solid #2a9d8f;
+    }
+
+    body[data-interaction-status="fail"] #out {
+      border-left: 4px solid #e76f51;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Testes de interação da Fase 2</h1>
+    <p id="summary">Executando…</p>
+    <iframe id="app-frame" title="Aplicação NORMALIZA! para testes da Fase 2"></iframe>
+    <pre id="out"></pre>
+  </main>
+
+  <script>
+    const frame = document.getElementById('app-frame');
+    const summary = document.getElementById('summary');
+    const out = document.getElementById('out');
+    const checks = [];
+
+    frame.addEventListener('load', () => {
+      run().catch((error) => {
+        checks.push({ name: 'execução geral', ok: false, detail: String(error && error.stack || error) });
+        finish(error);
+      });
+    });
+
+    frame.src = '../index.html#/cidade/produto';
+
+    async function run() {
+      const win = frame.contentWindow;
+      const doc = frame.contentDocument;
+
+      await waitFor(
+        () => doc.documentElement.dataset.appReady === 'true' && doc.getElementById('city-main'),
+        'aplicação inicializada'
+      );
+      await waitFor(() => doc.querySelector('.panel__title')?.textContent === 'PRODUTO', 'painel do PRODUTO');
+
+      check('painel do PRODUTO oferece a Fase 2', doc.querySelector('#info-panel .btn--primary')?.textContent.includes('Rede de Dependências'));
+      doc.querySelector('#info-panel .btn--primary').click();
+
+      await waitFor(
+        () => !doc.getElementById('phase-screen').hidden && !doc.getElementById('phase-host-fase-2').hidden,
+        'fase 2 aberta'
+      );
+
+      const phase2 = doc.getElementById('phase-host-fase-2');
+      await waitFor(() => phase2.querySelector('.phase-shell'), 'workspace da fase 2');
+
+      check('rota da fase 2 ativa', win.location.hash === '#/fase/rede-de-dependencias');
+      check('HUD mostra a fase 2', doc.querySelector('.hud__phase-name').textContent.includes('Fase 2'));
+      check('fase 2 mostra o título', phase2.querySelector('.phase-title').textContent === 'Rede de Dependências');
+      check('fase 2 mostra três registros', phase2.querySelectorAll('.fd-input-table tbody tr').length === 3);
+      check('fase 2 mostra cinco atributos na rede', phase2.querySelectorAll('.fd-node').length === 5);
+      check('fase 2 mostra duas tabelas de destino', phase2.querySelectorAll('.decomposition-table').length === 2);
+      check('pontuação da fase 2 começa em zero', phase2.querySelector('.phase-score strong').textContent.trim() === '0 / 100');
+
+      createDependency(phase2, ['pedido', 'produto'], 'quantidade', 'total');
+      await waitFor(() => phase2.querySelectorAll('.fd-connection').length === 1, 'dependência total criada');
+      check('rede desenha a dependência total', phase2.querySelectorAll('.fd-link--total').length === 1);
+
+      createDependency(phase2, ['produto'], 'descricao', 'partial');
+      await waitFor(() => phase2.querySelectorAll('.fd-connection').length === 2, 'dependência parcial de descrição');
+      createDependency(phase2, ['produto'], 'preco', 'partial');
+      await waitFor(() => phase2.querySelectorAll('.fd-connection').length === 3, 'dependência parcial de preço');
+
+      check('três conexões foram criadas', phase2.querySelectorAll('.fd-connection').length === 3);
+      check('duas dependências parciais são desenhadas', phase2.querySelectorAll('.fd-link--partial').length === 2);
+      check('pontuação registra as dependências', phase2.querySelector('.phase-score strong').textContent.trim() === '30 / 100');
+      check('HUD registra a pontuação da fase 2', doc.querySelector('.hud__score-value').textContent === '30 pts');
+
+      phase2.querySelector('[data-action="validate"]').click();
+      await waitFor(() => phase2.querySelector('.phase-feedback--error'), 'feedback de erro da fase 2');
+      check(
+        'validação aponta tabelas incompletas',
+        phase2.querySelector('.phase-feedback--error').textContent.includes('ITEM_PEDIDO') &&
+          phase2.querySelector('.phase-feedback--error').textContent.includes('PRODUTO')
+      );
+      check('validação incorreta penaliza a pontuação', phase2.querySelector('.phase-score strong').textContent.trim() === '20 / 100');
+
+      for (const attributeId of ['pedido', 'produto', 'quantidade']) {
+        toggleMembership(phase2, 'item_pedido', attributeId);
+      }
+      for (const attributeId of ['produto', 'descricao', 'preco']) {
+        toggleMembership(phase2, 'produto', attributeId);
+      }
+
+      await waitFor(
+        () => phase2.querySelectorAll('.decomposition-table--item_pedido .decomposition-attr').length === 3 &&
+          phase2.querySelectorAll('.decomposition-table--produto .decomposition-attr').length === 3,
+        'atributos distribuídos'
+      );
+      check('Produto aparece nas duas tabelas', phase2.querySelectorAll('.decomposition-attr__name').length === 6);
+
+      togglePrimaryKey(phase2, 'item_pedido', 'pedido');
+      togglePrimaryKey(phase2, 'item_pedido', 'produto');
+      togglePrimaryKey(phase2, 'produto', 'produto');
+
+      await waitFor(() => phase2.querySelectorAll('.pk-toggle.is-active').length === 3, 'PKs marcadas');
+      check('três atributos foram marcados como PK', phase2.querySelectorAll('.pk-toggle.is-active').length === 3);
+      check('pontuação registra dependências, atributos e PKs', phase2.querySelector('.phase-score strong').textContent.trim() === '80 / 100');
+
+      phase2.querySelector('[data-action="validate"]').click();
+      await waitFor(() => phase2.querySelector('.phase-complete'), 'conclusão da fase 2');
+
+      check('conclusão mostra as duas tabelas', phase2.querySelectorAll('.phase-complete .complete-table').length === 2);
+      check(
+        'conclusão explica a dependência parcial',
+        phase2.querySelector('.deps-complete-explain')?.textContent.includes('parciais') &&
+          phase2.querySelector('.deps-complete-explain')?.textContent.includes('Descrição')
+      );
+      check(
+        'conclusão preserva a pontuação de qualidade',
+        phase2.querySelector('.phase-complete__score strong').textContent.trim() === '90 / 100'
+      );
+      check('HUD recebe a pontuação final', doc.querySelector('.hud__score-value').textContent === '90 pts');
+      check(
+        'cidade recebe o novo edifício ITEM_PEDIDO',
+        Boolean(doc.querySelector('.building[data-building-id="item_pedido"]'))
+      );
+      check(
+        'PRODUTO evolui para 2FN',
+        doc.querySelector('.building[data-building-id="produto"]').classList.contains('is-normalized')
+      );
+      check(
+        'cidade recebe os relacionamentos',
+        doc.querySelectorAll('.city-dependency-link').length === 2
+      );
+
+      const saved = JSON.parse(win.localStorage.getItem('normaliza:v1:progress') || '{}');
+      check('progresso da fase 2 é persistido', saved['rede-de-dependencias']?.completed === true);
+
+      phase2.querySelector('[data-action="complete-exit"]').click();
+      await waitFor(
+        () => !doc.getElementById('city-main').hidden && doc.getElementById('phase-screen').hidden,
+        'retorno à cidade conectada'
+      );
+      check('cidade conectada é exibida', win.location.hash === '#/cidade/produto');
+      check(
+        'painel de PRODUTO indica fase 2 concluída',
+        doc.querySelector('#info-panel .panel__note--phase').textContent.includes('Fase 2 concluída')
+      );
+      check(
+        'painel oferece revisitar a fase 2',
+        doc.querySelector('#info-panel .btn--primary').textContent.includes('Revisitar')
+      );
+      check(
+        'painel de PRODUTO mostra atributos normalizados',
+        [...doc.querySelectorAll('#info-panel .panel__stat dd')].map((node) => node.textContent).join(',') === '4,3'
+      );
+
+      doc.querySelector('#info-panel .btn--primary').click();
+      await waitFor(
+        () => !doc.getElementById('phase-screen').hidden && phase2.querySelector('.phase-complete'),
+        'fase 2 concluída reaberta'
+      );
+      phase2.querySelector('[data-action="complete-reset"]').click();
+      await waitFor(
+        () => !phase2.querySelector('.phase-complete') &&
+          phase2.querySelectorAll('.fd-connection').length === 0 &&
+          phase2.querySelectorAll('.decomposition-attr').length === 0,
+        'fase 2 reiniciada'
+      );
+      check('reiniciar limpa a pontuação da fase 2', phase2.querySelector('.phase-score strong').textContent.trim() === '0 / 100');
+      check('reiniciar remove o edifício ITEM_PEDIDO', !doc.querySelector('.building[data-building-id="item_pedido"]'));
+      check(
+        'reiniciar remove a evolução de PRODUTO',
+        !doc.querySelector('.building[data-building-id="produto"]').classList.contains('is-normalized')
+      );
+      await waitFor(() => {
+        const progress = JSON.parse(win.localStorage.getItem('normaliza:v1:progress') || '{}');
+        return !progress['rede-de-dependencias'];
+      }, 'progresso da fase 2 limpo');
+
+      phase2.querySelector('[data-action="exit"]').click();
+      await waitFor(
+        () => !doc.getElementById('city-main').hidden && doc.getElementById('phase-screen').hidden,
+        'saída da fase 2'
+      );
+      check('saída da fase 2 volta para a cidade', win.location.hash === '#/cidade/produto');
+      check(
+        'painel volta a indicar fase 2 disponível',
+        doc.querySelector('#info-panel .panel__note--phase').textContent.includes('Fase 2 disponível')
+      );
+      check(
+        'painel volta aos atributos originais de PRODUTO',
+        [...doc.querySelectorAll('#info-panel .panel__stat dd')].map((node) => node.textContent).join(',') === '4,4'
+      );
+
+      finish();
+    }
+
+    function createDependency(phase2, determinant, dependent, type) {
+      const win = frame.contentWindow;
+
+      phase2.querySelector('[data-action="set-mode"][data-mode="determinant"]').click();
+      for (const attributeId of determinant) {
+        clickNode(phase2, win, attributeId);
+      }
+      phase2.querySelector('[data-action="set-mode"][data-mode="dependent"]').click();
+      clickNode(phase2, win, dependent);
+      phase2.querySelector(`[data-action="set-type"][data-type="${type}"]`).click();
+      phase2.querySelector('[data-action="add-dependency"]').click();
+    }
+
+    function clickNode(phase2, win, attributeId) {
+      const node = phase2.querySelector(`.fd-node[data-attribute="${attributeId}"]`);
+      node.dispatchEvent(new win.MouseEvent('click', { bubbles: true }));
+    }
+
+    function toggleMembership(phase2, tableId, attributeId) {
+      phase2
+        .querySelector(
+          `.membership-table [data-action="toggle-membership"][data-table="${tableId}"][data-attribute="${attributeId}"]`
+        )
+        .click();
+    }
+
+    function togglePrimaryKey(phase2, tableId, attributeId) {
+      phase2
+        .querySelector(
+          `.decomposition-table [data-action="toggle-primary-key"][data-table="${tableId}"][data-attribute="${attributeId}"]`
+        )
+        .click();
+    }
+
+    function check(name, condition) {
+      if (!condition) {
+        throw new Error(`Falhou: ${name}`);
+      }
+
+      checks.push({ name, ok: true });
+    }
+
+    function waitFor(predicate, description, timeout = 7000) {
+      return new Promise((resolve, reject) => {
+        const startedAt = Date.now();
+
+        const tick = () => {
+          try {
+            if (predicate()) {
+              resolve();
+              return;
+            }
+          } catch (error) {
+            reject(error);
+            return;
+          }
+
+          if (Date.now() - startedAt > timeout) {
+            reject(new Error(`Timeout aguardando: ${description}`));
+            return;
+          }
+
+          setTimeout(tick, 50);
+        };
+
+        tick();
+      });
+    }
+
+    function finish(error) {
+      const failed = Boolean(error) || checks.some((checkItem) => !checkItem.ok);
+      const passed = checks.filter((checkItem) => checkItem.ok).length;
+
+      document.body.dataset.interactionStatus = failed ? 'fail' : 'pass';
+      summary.textContent = failed
+        ? `Falha nos testes da Fase 2 (${passed} verificações passaram).`
+        : `Todos os testes da Fase 2 passaram (${passed} verificações).`;
+      out.textContent = JSON.stringify({ failed, checks }, null, 2);
+      document.title = failed ? 'FAIL — Interações Fase 2 NORMALIZA!' : 'PASS — Interações Fase 2 NORMALIZA!';
+    }
+  </script>
+</body>
+</html>

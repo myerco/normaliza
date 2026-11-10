@@ -1,0 +1,48 @@
+{
+  "id": "centro-de-distribuicao",
+  "title": "Centro de Distribuição",
+  "normalForm": "1FN",
+  "sourceTable": "PEDIDO",
+  "targetTable": "ITEM_PEDIDO",
+  "objective": "Identificar grupos repetitivos e transformar cada produto em um registro atômico em ITEM_PEDIDO.",
+  "summary": "Os pedidos chegaram com vários produtos na mesma célula. Separe cada produto em uma linha própria, mantendo o id_pedido.",
+  "rules": [
+    "Cada célula deve conter um único valor atômico.",
+    "Cada produto deve ter sua própria linha em ITEM_PEDIDO.",
+    "Toda linha de ITEM_PEDIDO deve manter o id_pedido de origem.",
+    "PEDIDO não deve manter listas de produtos."
+  ],
+  "concepts": {
+    "repeatingGroups": "Grupo repetitivo: quando uma célula guarda vários valores, como “Caneta, Lápis”.",
+    "atomicity": "Atomicidade: cada célula deve conter um único valor indivisível. Na 1FN, cada produto ocupa um registro próprio."
+  },
+  "orders": [
+    {
+      "id": "001",
+      "customer": "João",
+      "products": ["Caneta", "Lápis"]
+    },
+    {
+      "id": "002",
+      "customer": "Maria",
+      "products": ["Borracha", "Régua"]
+    },
+    {
+      "id": "003",
+      "customer": "Pedro",
+      "products": ["Caneta"]
+    }
+  ],
+  "hints": [
+    "Cada produto precisa de uma linha própria em ITEM_PEDIDO.",
+    "Ao mover um produto, o id_pedido deve ir junto. Sem ele, a ligação com o pedido se perde.",
+    "A amostra tem 3 pedidos e 5 produtos. Ao final, ITEM_PEDIDO deve ter 5 linhas."
+  ],
+  "scoring": {
+    "pointsPerItem": 10,
+    "completionBonus": 50,
+    "wrongValidationPenalty": 10,
+    "hintPenalty": 5,
+    "max": 100
+  }
+}

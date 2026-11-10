@@ -1,0 +1,73 @@
+{
+  "id": "administracao",
+  "title": "Administração da Cidade",
+  "subtitle": "Missão especial · Anomalias de redundância",
+  "intro": "A redundância de dados provoca anomalias de atualização, inserção e exclusão. Execute cada operação e observe as consequências nos registros e na cidade.",
+  "update": {
+    "department": "TI",
+    "oldLocation": "Porto Velho",
+    "newLocation": "Ariquemes",
+    "employees": [
+      { "cpf": "111", "nome": "João", "departamento": "TI", "localizacao": "Porto Velho" },
+      { "cpf": "222", "nome": "Maria", "departamento": "RH", "localizacao": "Ji-Paraná" },
+      { "cpf": "333", "nome": "Pedro", "departamento": "TI", "localizacao": "Porto Velho" }
+    ],
+    "explanations": {
+      "oneRow": "A atualização atingiu apenas uma linha. O departamento TI agora aparece com duas localizações diferentes: Porto Velho e Ariquemes. Isso é uma inconsistência causada pela redundância.",
+      "allRows": "A atualização foi consistente, mas foi necessário alterar várias linhas do mesmo departamento. Quanto mais cópias, maior o risco de esquecer uma e gerar inconsistência.",
+      "normalized": "Na estrutura normalizada, a localização existe uma única vez em DEPARTAMENTO. Atualizar uma linha propaga a informação para todos os funcionários pela FK. Menos redundância, mais integridade."
+    }
+  },
+  "insert": {
+    "newProduct": {
+      "produto": "1005",
+      "descricao": "Grampeador",
+      "categoria": "Escritório",
+      "preco": "12,00"
+    },
+    "orders": [
+      { "pedido": "001", "produto": "1001", "quantidade": 2, "descricao": "Caneta", "preco": "1,50" },
+      { "pedido": "001", "produto": "1002", "quantidade": 1, "descricao": "Lápis", "preco": "1,00" },
+      { "pedido": "002", "produto": "1003", "quantidade": 1, "descricao": "Borracha", "preco": "2,00" },
+      { "pedido": "002", "produto": "1004", "quantidade": 3, "descricao": "Régua", "preco": "3,00" }
+    ],
+    "products": [
+      { "produto": "1001", "descricao": "Caneta", "categoria": "Escritório", "preco": "1,50" },
+      { "produto": "1002", "descricao": "Lápis", "categoria": "Escritório", "preco": "1,00" },
+      { "produto": "1003", "descricao": "Borracha", "categoria": "Escritório", "preco": "2,00" },
+      { "produto": "1004", "descricao": "Régua", "categoria": "Escritório", "preco": "3,00" }
+    ],
+    "explanations": {
+      "blocked": "No modelo desnormalizado, o produto só existe dentro de uma linha de pedido. A chave (Pedido, Produto) exige um pedido; sem pedido, não há onde cadastrar o Grampeador. Usar Pedido nulo violaria a chave primária.",
+      "normalized": "No modelo normalizado, PRODUTO é independente. O Grampeador pode ser cadastrado antes de qualquer pedido existir."
+    }
+  },
+  "delete": {
+    "orderId": "002",
+    "orders": [
+      { "pedido": "001", "produto": "1001", "quantidade": 2, "descricao": "Caneta", "preco": "1,50" },
+      { "pedido": "001", "produto": "1002", "quantidade": 1, "descricao": "Lápis", "preco": "1,00" },
+      { "pedido": "002", "produto": "1003", "quantidade": 1, "descricao": "Borracha", "preco": "2,00" },
+      { "pedido": "002", "produto": "1004", "quantidade": 3, "descricao": "Régua", "preco": "3,00" }
+    ],
+    "products": [
+      { "produto": "1001", "descricao": "Caneta", "categoria": "Escritório", "preco": "1,50" },
+      { "produto": "1002", "descricao": "Lápis", "categoria": "Escritório", "preco": "1,00" },
+      { "produto": "1003", "descricao": "Borracha", "categoria": "Escritório", "preco": "2,00" },
+      { "produto": "1004", "descricao": "Régua", "categoria": "Escritório", "preco": "3,00" }
+    ],
+    "explanations": {
+      "denormalized": "Ao excluir o pedido 002, as únicas linhas que continham Borracha e Régua foram removidas. As informações desses produtos desapareceram junto com o pedido.",
+      "normalized": "No modelo normalizado, a exclusão do pedido remove apenas as linhas de ITEM_PEDIDO. Os registros de Borracha e Régua permanecem em PRODUTO."
+    }
+  },
+  "completion": {
+    "title": "Missão especial concluída!",
+    "message": "A normalização protege a integridade dos dados.",
+    "summary": [
+      "Atualização: sem redundância, uma alteração não gera cópias conflitantes.",
+      "Inserção: tabelas independentes permitem cadastrar dados sem depender de um pedido.",
+      "Exclusão: dados separados sobrevivem à remoção de um pedido."
+    ]
+  }
+}

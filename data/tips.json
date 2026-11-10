@@ -1,0 +1,37 @@
+{
+  "general": [
+    "Selecione um edifício no mapa ou use os atalhos do painel para inspecionar uma tabela.",
+    "O progresso das fases é salvo automaticamente neste dispositivo.",
+    "Use o botão Ajuda e glossário no painel da cidade para consultar dicas e o glossário.",
+    "Cada fase pode ser reiniciada no próprio cabeçalho ou na tela de conclusão.",
+    "Ao concluir uma fase, a cidade evolui e você recebe a medalha correspondente."
+  ],
+  "phase1": [
+    "Cada produto precisa de uma linha própria em ITEM_PEDIDO.",
+    "Nunca separe um produto do id_pedido: a associação com o pedido deve ser preservada.",
+    "Use “Selecionar pendentes” e “Mover selecionados” como alternativa ao arrastar e soltar.",
+    "Antes de validar, confira se os cinco produtos foram separados.",
+    "Grupo repetitivo é uma célula com vários valores, como “Caneta, Lápis”."
+  ],
+  "phase2": [
+    "Crie as três dependências declaradas e classifique cada uma como total ou parcial.",
+    "(Pedido, Produto) → Quantidade é total: usa a chave inteira.",
+    "Produto → Descrição e Produto → Preço são parciais: usam parte da chave.",
+    "Descrição e Preço não devem permanecer em ITEM_PEDIDO.",
+    "O atributo Produto aparece nas duas tabelas e é PK em ambas."
+  ],
+  "phase3": [
+    "A dependência transitiva é Departamento → Localização, pois Localização depende de CPF via Departamento.",
+    "Construa FUNCIONÁRIO com CPF, Nome e Departamento, e DEPARTAMENTO com Departamento e Localização.",
+    "Marque CPF como PK de FUNCIONÁRIO e Departamento como PK de DEPARTAMENTO.",
+    "Marque Departamento como FK em FUNCIONÁRIO e crie a estrada para DEPARTAMENTO.",
+    "A decomposição deve ser sem perda e preservar as DFs declaradas."
+  ],
+  "mission": [
+    "Atualizar apenas uma linha de um departamento repetido gera inconsistência.",
+    "A estrutura normalizada concentra a localização em uma única linha de DEPARTAMENTO.",
+    "Um produto sem pedido não pode ser inserido na tabela de pedidos, mas pode ser cadastrado em PRODUTO.",
+    "Excluir um pedido na tabela desnormalizada pode apagar produtos que só existiam ali.",
+    "Observe as animações e leia a explicação após cada operação."
+  ]
+}

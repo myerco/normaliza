@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Testes — NORMALIZA!</title>
+  <link rel="stylesheet" href="../assets/css/app.css">
+</head>
+<body class="tests-page">
+  <main>
+    <h1>Testes do NORMALIZA!</h1>
+    <p class="tests-subtitle">Verificação das rotas, estado e dados da cidade.</p>
+    <p id="test-summary" data-failed="" aria-live="polite">Executando…</p>
+    <ul id="test-results"></ul>
+  </main>
+
+  <script type="module">
+    import { runTests } from './helpers.js';
+    import './state.test.js';
+    import './router.test.js';
+    import './cityData.test.js';
+    import './phase1.test.js';
+    import './phaseData.test.js';
+    import './phase2.test.js';
+    import './phaseData2.test.js';
+    import './phase3.test.js';
+    import './phaseData3.test.js';
+    import './mission.test.js';
+    import './missionData.test.js';
+    import './progress.test.js';
+    import './supportData.test.js';
+
+    runTests();
+  </script>
+</body>
+</html>

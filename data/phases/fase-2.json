@@ -1,0 +1,107 @@
+{
+  "id": "rede-de-dependencias",
+  "title": "Rede de Dependências",
+  "normalForm": "2FN",
+  "sourceTable": "ITEM_PEDIDO",
+  "objective": "Identificar dependências funcionais totais e parciais, construir a rede e decompor a tabela.",
+  "summary": "A tabela ITEM_PEDIDO tem chave composta (Pedido, Produto). Descrição e Preço dependem apenas de Produto, não da chave inteira.",
+  "attributes": [
+    { "id": "pedido", "label": "Pedido", "role": "key" },
+    { "id": "produto", "label": "Produto", "role": "key" },
+    { "id": "quantidade", "label": "Quantidade", "role": "dependent" },
+    { "id": "descricao", "label": "Descrição", "role": "dependent" },
+    { "id": "preco", "label": "Preço", "role": "dependent" }
+  ],
+  "candidateKey": ["pedido", "produto"],
+  "functionalDependencies": [
+    {
+      "id": "fd-quantidade",
+      "determinant": ["pedido", "produto"],
+      "dependent": "quantidade",
+      "type": "total",
+      "label": "(Pedido, Produto) → Quantidade"
+    },
+    {
+      "id": "fd-descricao",
+      "determinant": ["produto"],
+      "dependent": "descricao",
+      "type": "partial",
+      "label": "Produto → Descrição"
+    },
+    {
+      "id": "fd-preco",
+      "determinant": ["produto"],
+      "dependent": "preco",
+      "type": "partial",
+      "label": "Produto → Preço"
+    }
+  ],
+  "rows": [
+    { "pedido": "001", "produto": "1001", "quantidade": 2, "descricao": "Caneta", "preco": "1,50" },
+    { "pedido": "001", "produto": "1002", "quantidade": 1, "descricao": "Lápis", "preco": "1,00" },
+    { "pedido": "002", "produto": "1001", "quantidade": 5, "descricao": "Caneta", "preco": "1,50" }
+  ],
+  "targetTables": [
+    {
+      "id": "item_pedido",
+      "name": "ITEM_PEDIDO",
+      "attributes": ["pedido", "produto", "quantidade"],
+      "primaryKey": ["pedido", "produto"]
+    },
+    {
+      "id": "produto",
+      "name": "PRODUTO",
+      "attributes": ["produto", "descricao", "preco"],
+      "primaryKey": ["produto"]
+    }
+  ],
+  "concepts": {
+    "total": "Dependência funcional total: o determinante é a chave inteira (Pedido, Produto). Quantidade depende dos dois atributos.",
+    "partial": "Dependência funcional parcial: um atributo não primo depende de parte da chave composta. Descrição e Preço dependem apenas de Produto.",
+    "secondNormalForm": "2FN: a relação está em 1FN e todo atributo não primo depende da chave inteira, nunca de parte dela."
+  },
+  "rules": [
+    "A chave primária composta é (Pedido, Produto).",
+    "(Pedido, Produto) → Quantidade é uma dependência total.",
+    "Produto → Descrição e Produto → Preço são dependências parciais.",
+    "Atributos não primos não podem depender de parte da chave.",
+    "A decomposição deve preservar os atributos e as dependências declaradas."
+  ],
+  "hints": [
+    "Quantidade só pode ser determinada quando você conhece o pedido e o produto.",
+    "Descrição e Preço se repetem para o mesmo produto. Elas dependem apenas de Produto.",
+    "Em 2FN, atributos que dependem de parte da chave composta saem para uma nova tabela.",
+    "ITEM_PEDIDO fica com Pedido, Produto e Quantidade; PRODUTO fica com Produto, Descrição e Preço."
+  ],
+  "scoring": {
+    "pointsPerDependency": 10,
+    "pointsPerMembership": 5,
+    "pointsPerPrimaryKey": 10,
+    "completionBonus": 10,
+    "wrongValidationPenalty": 10,
+    "hintPenalty": 5,
+    "max": 100
+  },
+  "cityEvolution": {
+    "buildings": [
+      {
+        "id": "item_pedido",
+        "name": "ITEM_PEDIDO",
+        "description": "Itens de pedido após a decomposição da 2FN.",
+        "recordCount": 3,
+        "attributes": ["pedido", "produto", "quantidade"],
+        "position": { "x": 760, "y": 330 },
+        "size": { "width": 100, "depth": 80, "height": 80 },
+        "color": "#457b9d",
+        "badgeLabel": "2FN"
+      }
+    ],
+    "links": [
+      { "from": "pedido", "to": "item_pedido", "label": "1:N" },
+      { "from": "produto", "to": "item_pedido", "label": "1:N" }
+    ],
+    "normalizedBuildings": [
+      { "id": "produto", "badgeLabel": "2FN" }
+    ]
+  }
+}

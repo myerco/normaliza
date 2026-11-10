@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b1622">
+  <title>NORMALIZA! — Cidade dos dados</title>
+  <meta name="description" content="NORMALIZA! é um jogo educativo de normalização de bancos de dados.">
+  <link rel="stylesheet" href="./assets/css/app.css">
+</head>
+<body>
+  <div id="app" class="app">
+    <section id="splash-screen" class="screen splash" data-screen="splash">
+      <svg class="splash__skyline" viewBox="0 0 1200 520" preserveAspectRatio="xMidYMax slice" aria-hidden="true" focusable="false">
+        <defs>
+          <linearGradient id="splashGround" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#24554f"></stop>
+            <stop offset="100%" stop-color="#0c2427"></stop>
+          </linearGradient>
+          <radialGradient id="splashGlow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#ffd166" stop-opacity=".24"></stop>
+            <stop offset="100%" stop-color="#ffd166" stop-opacity="0"></stop>
+          </radialGradient>
+        </defs>
+
+        <ellipse cx="600" cy="350" rx="560" ry="190" fill="url(#splashGlow)"></ellipse>
+        <polygon points="0,430 600,280 1200,430 600,580" fill="url(#splashGround)"></polygon>
+        <polygon points="0,430 600,280 1200,430 600,580" fill="none" stroke="#4f8f80" stroke-opacity=".35" stroke-width="4"></polygon>
+
+        <path d="M 110 474 Q 600 552 1090 474" fill="none" stroke="#20384a" stroke-width="48" stroke-linecap="round"></path>
+        <path d="M 110 474 Q 600 552 1090 474" fill="none" stroke="#5f7488" stroke-width="34" stroke-linecap="round"></path>
+        <path d="M 110 474 Q 600 552 1090 474" fill="none" stroke="#f4ead2" stroke-width="4" stroke-linecap="round" stroke-dasharray="14 18" stroke-opacity=".55"></path>
+
+        <g opacity=".9">
+          <polygon points="340,280 400,300 340,320 280,300" fill="#f2d58e"></polygon>
+          <polygon points="280,300 340,320 340,460 280,440" fill="#c7a44f"></polygon>
+          <polygon points="400,300 340,320 340,460 400,440" fill="#a58742"></polygon>
+          <polygon points="340,291 383,305 340,319 297,305" fill="#f7dfa0"></polygon>
+          <polygon points="382,446 370,450 370,424.8 382,420.8" fill="#3b2f17"></polygon>
+          <polygon points="391,380 382.6,382.8 382.6,363.2 391,360.4" fill="#fff0ba"></polygon>
+          <polygon points="373,386 364.6,388.8 364.6,369.2 373,366.4" fill="#fff0ba"></polygon>
+        </g>
+
+        <g opacity=".95">
+          <polygon points="600,247.5 665,270 600,292.5 535,270" fill="#f08d74"></polygon>
+          <polygon points="535,270 600,292.5 600,462.5 535,440" fill="#c45d42"></polygon>
+          <polygon points="665,270 600,292.5 600,462.5 665,440" fill="#a44c35"></polygon>
+          <polygon points="600,261 647,277 600,293 553,277" fill="#f7a68f"></polygon>
+          <polygon points="645.5,446.75 632.5,451.25 632.5,420.65 645.5,416.15" fill="#4a2017"></polygon>
+          <polygon points="657.2,371.3 649.4,374 649.4,353.6 657.2,350.9" fill="#ffd9a8"></polygon>
+          <polygon points="639,377.6 631.2,380.3 631.2,359.9 639,357.2" fill="#ffd9a8"></polygon>
+          <polygon points="620.8,383.9 613,386.6 613,366.2 620.8,363.5" fill="#ffd9a8"></polygon>
+          <polygon points="657.2,327.1 649.4,329.8 649.4,309.4 657.2,306.7" fill="#ffd9a8"></polygon>
+          <polygon points="639,333.4 631.2,336.1 631.2,315.7 639,313" fill="#ffd9a8"></polygon>
+          <polygon points="620.8,339.7 613,342.4 613,322 620.8,319.3" fill="#ffd9a8"></polygon>
+        </g>
+
+        <g opacity=".92">
+          <polygon points="860,301.25 915,320 860,338.75 805,320" fill="#4bb3a5"></polygon>
+          <polygon points="805,320 860,338.75 860,458.75 805,440" fill="#238579"></polygon>
+          <polygon points="915,320 860,338.75 860,458.75 915,440" fill="#1c6b62"></polygon>
+          <polygon points="860,311 898,323 860,335 822,323" fill="#63c8ba"></polygon>
+          <polygon points="898.5,445.625 887.5,449.375 887.5,425.375 898.5,421.625" fill="#0c332f"></polygon>
+          <polygon points="906.75,388.8 899.05,391.44 899.05,374.64 906.75,372.01" fill="#b8f4e8"></polygon>
+          <polygon points="890.25,394.44 882.55,397.06 882.55,380.26 890.25,377.64" fill="#b8f4e8"></polygon>
+        </g>
+
+        <g opacity=".65">
+          <polygon points="520,338 560,350 520,362 480,350" fill="#7aa6a0"></polygon>
+          <polygon points="480,350 520,362 520,432 480,420" fill="#4c7d77"></polygon>
+          <polygon points="560,350 520,362 520,432 560,420" fill="#3b6661"></polygon>
+
+          <polygon points="730,356 768,368 730,380 692,368" fill="#7d91a6"></polygon>
+          <polygon points="692,368 730,380 730,440 692,428" fill="#52677a"></polygon>
+          <polygon points="768,368 730,380 730,440 768,428" fill="#415568"></polygon>
+        </g>
+      </svg>
+
+      <div class="splash__content">
+        <p class="splash__eyebrow">Construa dados bem organizados</p>
+        <h1 class="splash__title">NORMALIZA<span>!</span></h1>
+        <p class="splash__subtitle">Uma cidade, três tabelas e muitas dependências para organizar.</p>
+        <nav class="splash__menu" aria-label="Menu principal">
+          <button id="btn-start" class="btn btn--primary" type="button">Iniciar jogo</button>
+          <button id="btn-how" class="btn btn--ghost" type="button">Como jogar</button>
+        </nav>
+        <p class="splash__hint">Dica: use Tab e Enter para navegar também pelo teclado.</p>
+      </div>
+    </section>
+
+    <section id="game-screen" class="screen game" data-screen="city" hidden aria-hidden="true">
+      <header id="hud" class="hud"></header>
+      <main id="city-main" class="game-main">
+        <section class="city-stage" tabindex="-1" aria-labelledby="city-heading">
+          <h1 id="city-heading" class="sr-only">Cidade interativa</h1>
+          <div class="city-frame">
+            <svg id="city-svg" class="city-svg" role="group" aria-label="Cidade isométrica com os edifícios PEDIDO, PRODUTO e CLIENTE"></svg>
+          </div>
+        </section>
+        <aside id="info-panel" class="info-panel" aria-label="Informações da cidade"></aside>
+      </main>
+      <section id="phase-screen" class="phase-screen" hidden aria-hidden="true">
+        <div id="phase-host-fase-1" class="phase-host" hidden></div>
+        <div id="phase-host-fase-2" class="phase-host" hidden></div>
+        <div id="phase-host-fase-3" class="phase-host" hidden></div>
+      </section>
+      <section id="mission-screen" class="phase-screen" hidden aria-hidden="true">
+        <div id="mission-host" class="phase-host"></div>
+      </section>
+    </section>
+
+    <div id="instructions-root"></div>
+    <div id="help-root"></div>
+    <div id="confirm-root"></div>
+  </div>
+
+  <noscript><p class="noscript">O NORMALIZA! precisa de JavaScript para funcionar.</p></noscript>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>

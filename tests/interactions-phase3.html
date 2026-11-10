@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Testes de interação da Fase 3 — NORMALIZA!</title>
+  <style>
+    html,
+    body {
+      margin: 0;
+      background: #07111d;
+      color: #f7f1e3;
+      font-family: "Segoe UI", system-ui, sans-serif;
+    }
+
+    main {
+      padding: 1rem;
+    }
+
+    iframe {
+      width: 1200px;
+      max-width: 100%;
+      height: 800px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      background: #0b1622;
+    }
+
+    pre {
+      padding: 1rem;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      white-space: pre-wrap;
+    }
+
+    body[data-interaction-status="pass"] #out {
+      border-left: 4px solid #2a9d8f;
+    }
+
+    body[data-interaction-status="fail"] #out {
+      border-left: 4px solid #e76f51;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Testes de interação da Fase 3</h1>
+    <p id="summary">Executando…</p>
+    <iframe id="app-frame" title="Aplicação NORMALIZA! para testes da Fase 3"></iframe>
+    <pre id="out"></pre>
+  </main>
+
+  <script>
+    const frame = document.getElementById('app-frame');
+    const summary = document.getElementById('summary');
+    const out = document.getElementById('out');
+    const checks = [];
+
+    frame.addEventListener('load', () => {
+      run().catch((error) => {
+        checks.push({ name: 'execução geral', ok: false, detail: String(error && error.stack || error) });
+        finish(error);
+      });
+    });
+
+    frame.src = '../index.html#/cidade/funcionario';
+
+    async function run() {
+      const win = frame.contentWindow;
+      const doc = frame.contentDocument;
+
+      await waitFor(
+        () => doc.documentElement.dataset.appReady === 'true' && doc.getElementById('city-main'),
+        'aplicação inicializada'
+      );
+      await waitFor(() => doc.querySelector('.panel__title')?.textContent === 'FUNCIONÁRIO', 'painel do FUNCIONÁRIO');
+
+      check('painel do FUNCIONÁRIO oferece a Fase 3', doc.querySelector('#info-panel .btn--primary')?.textContent.includes('Cidade Organizada'));
+      doc.querySelector('#info-panel .btn--primary').click();
+
+      await waitFor(
+        () => !doc.getElementById('phase-screen').hidden && !doc.getElementById('phase-host-fase-3').hidden,
+        'fase 3 aberta'
+      );
+
+      const phase3 = doc.getElementById('phase-host-fase-3');
+      await waitFor(() => phase3.querySelector('.phase-shell'), 'workspace da fase 3');
+
+      check('rota da fase 3 ativa', win.location.hash === '#/fase/cidade-organizada');
+      check('HUD mostra a fase 3', doc.querySelector('.hud__phase-name').textContent.includes('Fase 3'));
+      check('fase 3 mostra o título', phase3.querySelector('.phase-title').textContent === 'Cidade Organizada');
+      check('fase 3 mostra três registros', phase3.querySelectorAll('.fd-input-table tbody tr').length === 3);
+      check('fase 3 mostra três dependências', phase3.querySelectorAll('.p3-fd-choice').length === 3);
+      check('fase 3 mostra dois terrenos', phase3.querySelectorAll('.p3-lot').length === 2);
+      check('pontuação da fase 3 começa em zero', phase3.querySelector('.phase-score strong').textContent.trim() === '0 / 100');
+
+      phase3.querySelector('[data-action="select-transitive"][data-dependency-id="fd-localizacao"]').click();
+      await waitFor(() => phase3.querySelector('.phase-score strong').textContent.trim() === '20 / 100', 'transitiva identificada');
+      check('dependência transitiva selecionada', phase3.querySelectorAll('.p3-fd-choice.is-selected').length === 1);
+
+      phase3.querySelector('[data-action="build-table"][data-table="funcionario"]').click();
+      phase3.querySelector('[data-action="build-table"][data-table="departamento"]').click();
+      await waitFor(() => phase3.querySelectorAll('.p3-lot.is-built').length === 2, 'edifícios construídos');
+      check('dois edifícios foram construídos', phase3.querySelectorAll('.p3-lot.is-built').length === 2);
+      check('duas tabelas foram criadas', phase3.querySelectorAll('.p3-table').length === 2);
+      check('pontuação registra os edifícios', phase3.querySelector('.phase-score strong').textContent.trim() === '40 / 100');
+
+      phase3.querySelector('[data-action="validate"]').click();
+      await waitFor(() => phase3.querySelector('.phase-feedback--error'), 'feedback de erro da fase 3');
+      check(
+        'validação aponta tabelas incompletas',
+        phase3.querySelector('.phase-feedback--error').textContent.includes('FUNCIONÁRIO') &&
+          phase3.querySelector('.phase-feedback--error').textContent.includes('DEPARTAMENTO')
+      );
+      check('validação incorreta penaliza a pontuação', phase3.querySelector('.phase-score strong').textContent.trim() === '30 / 100');
+
+      for (const attributeId of ['cpf', 'nome', 'departamento']) {
+        toggleMembership(phase3, 'funcionario', attributeId);
+      }
+      for (const attributeId of ['departamento', 'localizacao']) {
+        toggleMembership(phase3, 'departamento', attributeId);
+      }
+
+      await waitFor(
+        () => phase3.querySelectorAll('.p3-table--funcionario .p3-attr').length === 3 &&
+          phase3.querySelectorAll('.p3-table--departamento .p3-attr').length === 2,
+        'atributos distribuídos'
+      );
+      check('Departamento aparece nas duas tabelas', phase3.querySelectorAll('.p3-attr').length === 5);
+
+      togglePrimaryKey(phase3, 'funcionario', 'cpf');
+      togglePrimaryKey(phase3, 'departamento', 'departamento');
+      toggleForeignKey(phase3, 'funcionario', 'departamento');
+
+      await waitFor(() => phase3.querySelectorAll('.pk-toggle.is-active').length === 2 && phase3.querySelectorAll('.fk-toggle.is-active').length === 1, 'chaves marcadas');
+      check('duas PKs foram definidas', phase3.querySelectorAll('.pk-toggle.is-active').length === 2);
+      check('uma FK foi definida', phase3.querySelectorAll('.fk-toggle.is-active').length === 1);
+
+      await setSelect(phase3, win, 'source-table', 'funcionario');
+      await setSelect(phase3, win, 'source-attribute', 'departamento');
+      await setSelect(phase3, win, 'target-table', 'departamento');
+      await setSelect(phase3, win, 'target-attribute', 'departamento');
+      await waitFor(() => !phase3.querySelector('[data-action="add-relationship"]').disabled, 'construtor de relacionamento pronto');
+      phase3.querySelector('[data-action="add-relationship"]').click();
+      await waitFor(() => phase3.querySelectorAll('.p3-relationship').length === 1, 'relacionamento criado');
+
+      check('relacionamento criado', phase3.querySelectorAll('.p3-relationship').length === 1);
+      check(
+        'relacionamento conecta FUNCIONÁRIO e DEPARTAMENTO',
+        phase3.querySelector('.p3-relationship').textContent.includes('FUNCIONÁRIO') &&
+          phase3.querySelector('.p3-relationship').textContent.includes('DEPARTAMENTO')
+      );
+      check('pontuação registra chaves e relacionamento', phase3.querySelector('.phase-score strong').textContent.trim() === '80 / 100');
+
+      phase3.querySelector('[data-action="validate"]').click();
+      await waitFor(() => phase3.querySelector('.phase-complete'), 'conclusão da fase 3');
+
+      check('conclusão compara cidade original e normalizada', phase3.querySelectorAll('.p3-comparison__side').length === 2);
+      check(
+        'conclusão explica a dependência transitiva',
+        phase3.querySelector('.deps-complete-explain')?.textContent.includes('transitividade') &&
+          phase3.querySelector('.deps-complete-explain')?.textContent.includes('Localização')
+      );
+      check(
+        'conclusão preserva a pontuação de qualidade',
+        phase3.querySelector('.phase-complete__score strong').textContent.trim() === '90 / 100'
+      );
+      check('HUD recebe a pontuação final', doc.querySelector('.hud__score-value').textContent === '90 pts');
+      check(
+        'cidade recebe o novo edifício DEPARTAMENTO',
+        Boolean(doc.querySelector('.building[data-building-id="departamento"]'))
+      );
+      check(
+        'FUNCIONÁRIO evolui para 3FN',
+        doc.querySelector('.building[data-building-id="funcionario"]').classList.contains('is-normalized')
+      );
+      check(
+        'cidade recebe o relacionamento',
+        doc.querySelectorAll('.building[data-building-id="departamento"]').length === 1 &&
+          doc.querySelectorAll('.city-dependency-link').length === 1
+      );
+
+      const saved = JSON.parse(win.localStorage.getItem('normaliza:v1:progress') || '{}');
+      check('progresso da fase 3 é persistido', saved['cidade-organizada']?.completed === true);
+
+      phase3.querySelector('[data-action="complete-exit"]').click();
+      await waitFor(
+        () => !doc.getElementById('city-main').hidden && doc.getElementById('phase-screen').hidden,
+        'retorno à cidade organizada'
+      );
+      check('cidade organizada é exibida', win.location.hash === '#/cidade/funcionario');
+      check(
+        'painel de FUNCIONÁRIO indica fase 3 concluída',
+        doc.querySelector('#info-panel .panel__note--phase').textContent.includes('Fase 3 concluída')
+      );
+      check(
+        'painel oferece revisitar a fase 3',
+        doc.querySelector('#info-panel .btn--primary').textContent.includes('Revisitar')
+      );
+      check(
+        'painel de FUNCIONÁRIO mostra atributos normalizados',
+        [...doc.querySelectorAll('#info-panel .panel__stat dd')].map((node) => node.textContent).join(',') === '3,3'
+      );
+
+      doc.querySelector('#info-panel .btn--primary').click();
+      await waitFor(
+        () => !doc.getElementById('phase-screen').hidden && phase3.querySelector('.phase-complete'),
+        'fase 3 concluída reaberta'
+      );
+      phase3.querySelector('[data-action="complete-reset"]').click();
+      await waitFor(
+        () => !phase3.querySelector('.phase-complete') &&
+          phase3.querySelectorAll('.p3-lot.is-built').length === 0 &&
+          phase3.querySelectorAll('.p3-table').length === 0,
+        'fase 3 reiniciada'
+      );
+      check('reiniciar limpa a pontuação da fase 3', phase3.querySelector('.phase-score strong').textContent.trim() === '0 / 100');
+      check('reiniciar limpa a dependência transitiva', phase3.querySelectorAll('.p3-fd-choice.is-selected').length === 0);
+      check('reiniciar remove o edifício DEPARTAMENTO', !doc.querySelector('.building[data-building-id="departamento"]'));
+      check(
+        'reiniciar remove a evolução de FUNCIONÁRIO',
+        !doc.querySelector('.building[data-building-id="funcionario"]').classList.contains('is-normalized')
+      );
+      await waitFor(() => {
+        const progress = JSON.parse(win.localStorage.getItem('normaliza:v1:progress') || '{}');
+        return !progress['cidade-organizada'];
+      }, 'progresso da fase 3 limpo');
+
+      phase3.querySelector('[data-action="exit"]').click();
+      await waitFor(
+        () => !doc.getElementById('city-main').hidden && doc.getElementById('phase-screen').hidden,
+        'saída da fase 3'
+      );
+      check('saída da fase 3 volta para a cidade', win.location.hash === '#/cidade/funcionario');
+      check(
+        'painel volta a indicar fase 3 disponível',
+        doc.querySelector('#info-panel .panel__note--phase').textContent.includes('Fase 3 disponível')
+      );
+      check(
+        'painel volta aos atributos originais de FUNCIONÁRIO',
+        [...doc.querySelectorAll('#info-panel .panel__stat dd')].map((node) => node.textContent).join(',') === '3,4'
+      );
+
+      finish();
+    }
+
+    function toggleMembership(phase3, tableId, attributeId) {
+      phase3
+        .querySelector(
+          `.p3-membership [data-action="toggle-membership"][data-table="${tableId}"][data-attribute="${attributeId}"]`
+        )
+        .click();
+    }
+
+    function togglePrimaryKey(phase3, tableId, attributeId) {
+      phase3
+        .querySelector(
+          `.p3-table [data-action="toggle-primary-key"][data-table="${tableId}"][data-attribute="${attributeId}"]`
+        )
+        .click();
+    }
+
+    function toggleForeignKey(phase3, tableId, attributeId) {
+      phase3
+        .querySelector(
+          `.p3-table [data-action="toggle-foreign-key"][data-table="${tableId}"][data-attribute="${attributeId}"]`
+        )
+        .click();
+    }
+
+    function setSelect(phase3, win, builder, value) {
+      const select = phase3.querySelector(`[data-builder="${builder}"]`);
+      select.value = value;
+      select.dispatchEvent(new win.Event('change', { bubbles: true }));
+    }
+
+    function check(name, condition) {
+      if (!condition) {
+        throw new Error(`Falhou: ${name}`);
+      }
+
+      checks.push({ name, ok: true });
+    }
+
+    function waitFor(predicate, description, timeout = 7000) {
+      return new Promise((resolve, reject) => {
+        const startedAt = Date.now();
+
+        const tick = () => {
+          try {
+            if (predicate()) {
+              resolve();
+              return;
+            }
+          } catch (error) {
+            reject(error);
+            return;
+          }
+
+          if (Date.now() - startedAt > timeout) {
+            reject(new Error(`Timeout aguardando: ${description}`));
+            return;
+          }
+
+          setTimeout(tick, 50);
+        };
+
+        tick();
+      });
+    }
+
+    function finish(error) {
+      const failed = Boolean(error) || checks.some((checkItem) => !checkItem.ok);
+      const passed = checks.filter((checkItem) => checkItem.ok).length;
+
+      document.body.dataset.interactionStatus = failed ? 'fail' : 'pass';
+      summary.textContent = failed
+        ? `Falha nos testes da Fase 3 (${passed} verificações passaram).`
+        : `Todos os testes da Fase 3 passaram (${passed} verificações).`;
+      out.textContent = JSON.stringify({ failed, checks }, null, 2);
+      document.title = failed ? 'FAIL — Interações Fase 3 NORMALIZA!' : 'PASS — Interações Fase 3 NORMALIZA!';
+    }
+  </script>
+</body>
+</html>
