@@ -150,7 +150,7 @@ function buildProgressSection(progress, onResetGame, onOpenHelp) {
             type: 'button',
             onclick: onResetGame
           },
-          'Reiniciar todo o jogo'
+          'Reiniciar meu progresso'
         )
       ])
     ]
@@ -158,9 +158,9 @@ function buildProgressSection(progress, onResetGame, onOpenHelp) {
 }
 
 function buildDetails(building, onClose, phaseActions) {
-  const completedPhase = phaseActions.find(
-    (action) => action.completed && action.normalizedAttributes
-  );
+  const completedPhase = phaseActions
+    .filter((action) => action.completed && action.normalizedAttributes)
+    .at(-1);
   const attributes = completedPhase?.normalizedAttributes || building.attributes;
 
   return el('div', { class: 'panel__details' }, [

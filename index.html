@@ -4,13 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#0b1622">
-  <title>NORMALIZA! — Cidade dos dados</title>
-  <meta name="description" content="NORMALIZA! é um jogo educativo de normalização de bancos de dados.">
+  <title>Cafegeek — Jornada do Conhecimento</title>
+  <meta name="description" content="Cafegeek — Jornada do Conhecimento: aprenda, desenvolva suas habilidades e supere desafios.">
   <link rel="stylesheet" href="./assets/css/app.css">
+  <link rel="stylesheet" href="./assets/css/platform.css">
 </head>
 <body>
   <div id="app" class="app">
-    <section id="splash-screen" class="screen splash" data-screen="splash">
+    <section id="splash-screen" class="screen splash platform-home" data-screen="splash">
       <svg class="splash__skyline" viewBox="0 0 1200 520" preserveAspectRatio="xMidYMax slice" aria-hidden="true" focusable="false">
         <defs>
           <linearGradient id="splashGround" x1="0" y1="0" x2="0" y2="1">
@@ -76,16 +77,7 @@
         </g>
       </svg>
 
-      <div class="splash__content">
-        <p class="splash__eyebrow">Construa dados bem organizados</p>
-        <h1 class="splash__title">NORMALIZA<span>!</span></h1>
-        <p class="splash__subtitle">Uma cidade, três tabelas e muitas dependências para organizar.</p>
-        <nav class="splash__menu" aria-label="Menu principal">
-          <button id="btn-start" class="btn btn--primary" type="button">Iniciar jogo</button>
-          <button id="btn-how" class="btn btn--ghost" type="button">Como jogar</button>
-        </nav>
-        <p class="splash__hint">Dica: use Tab e Enter para navegar também pelo teclado.</p>
-      </div>
+      <div class="splash__content" id="home-content"></div>
     </section>
 
     <section id="game-screen" class="screen game" data-screen="city" hidden aria-hidden="true">
@@ -103,10 +95,15 @@
         <div id="phase-host-fase-1" class="phase-host" hidden></div>
         <div id="phase-host-fase-2" class="phase-host" hidden></div>
         <div id="phase-host-fase-3" class="phase-host" hidden></div>
+        <div id="phase-host-fase-4" class="phase-host" hidden></div>
       </section>
       <section id="mission-screen" class="phase-screen" hidden aria-hidden="true">
         <div id="mission-host" class="phase-host"></div>
       </section>
+    </section>
+
+    <section id="page-screen" class="screen page-screen" hidden aria-hidden="true">
+      <div id="page-host" class="page-shell"></div>
     </section>
 
     <div id="instructions-root"></div>
@@ -114,7 +111,8 @@
     <div id="confirm-root"></div>
   </div>
 
-  <noscript><p class="noscript">O NORMALIZA! precisa de JavaScript para funcionar.</p></noscript>
+  <noscript><p class="noscript">A Cafegeek — Jornada do Conhecimento precisa de JavaScript para funcionar.</p></noscript>
+  <script src="./config/runtime.js"></script>
   <script type="module" src="./src/main.js"></script>
 </body>
 </html>

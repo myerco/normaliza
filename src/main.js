@@ -10,10 +10,69 @@ import { validateCityData } from './data/validateCityData.js';
 import { validatePhaseData } from './data/validatePhaseData.js';
 import { validatePhase2Data } from './data/validatePhase2Data.js';
 import { validatePhase3Data } from './data/validatePhase3Data.js';
+import { validatePhase4Data } from './data/validatePhase4Data.js';
 import { validateMissionData } from './data/validateMissionData.js';
 import { buildGameProgress } from './core/progress.js';
-import { initSplash } from './ui/splash.js';
-import { renderHud, updateHudPhase, updateHudScore } from './ui/hud.js';
+import { buildAchievements, buildProfileSummary } from './core/profile.js';
+import { buildLeaderboard } from './core/ranking.js';
+import { toSnapshot as snapshotPhase1 } from './core/fase1.js';
+import { toSnapshot as snapshotPhase2 } from './core/fase2.js';
+import { toSnapshot as snapshotPhase3 } from './core/fase3.js';
+import { toSnapshot as snapshotPhase4 } from './core/fase4.js';
+import {
+  clearPhaseSnapshot,
+  clearPlayerProgress,
+  createLocalPlayer,
+  getActivePlayer,
+  getPlayerSyncState,
+  hasLegacyProgress,
+  listLocalPlayers,
+  loadPendingMatches,
+  loadPhaseSnapshot,
+  loadRankingCache,
+  savePendingMatches,
+  savePhaseSnapshot,
+  setActivePlayer,
+  updateLocalPlayer
+} from './persistence/playerStorage.js';
+import {
+  createCharacterForPlayer,
+  ensurePrimaryCharacter,
+  getPrimaryCharacter,
+  updateCharacter
+} from './persistence/characterStorage.js';
+import {
+  createArchetype,
+  createAttribute,
+  loadCatalog,
+  setArchetypeValues,
+  updateArchetype,
+  updateAttribute
+} from './persistence/catalogStorage.js';
+import {
+  loadQuestCatalog,
+  loadQuestProgress,
+  startQuest
+} from './persistence/questStorage.js';
+import { ensureProgression } from './persistence/progressionStorage.js';
+import { loadKnowledgeCatalog } from './persistence/knowledgeStorage.js';
+import { loadImageAssets, updateImageAsset } from './persistence/imageStorage.js';
+import { awardQuestCompletion } from './services/progression-service.js';
+import { questStatusFor } from './core/quests.js';
+import { loadSharedLeaderboard } from './services/leaderboard-service.js';
+import { isOnline, synchronizePlayer, attachSynchronization } from './services/synchronization.js';
+import {
+  ensureRemotePlayer,
+  queueCompletedPhaseSnapshots,
+  queuePhaseCompletion
+} from './services/score-service.js';
+import {
+  confirmNormalizaQuest,
+  recordRemoteHint,
+  recordRemoteValidation,
+  startRemoteAttempt
+} from './services/multiplayer.js';
+import { playCompletionCelebration } from './ui/celebration.js';
 import {
   addCityExtension,
   playBuildAnimation,
@@ -22,25 +81,30 @@ import {
   setBuildingNormalized,
   setSelectedBuilding
 } from './ui/cityScene.js';
+import { renderHud, updateHudPhase, updateHudScore } from './ui/hud.js';
 import { renderPanel } from './ui/infoPanel.js';
+import { renderHome } from './ui/home.js';
+import { renderChallengesPage } from './ui/challenges.js';
+import { renderKnowledgePage } from './ui/knowledge.js';
+import { renderProfilePage } from './ui/profile.js';
+import { renderAdminPage } from './ui/admin.js';
+import { renderCharacterPage } from './ui/character.js';
+import { renderLeaderboardPage } from './ui/leaderboard.js';
+import { renderAchievementsPage } from './ui/achievements.js';
+import { renderAboutPage } from './ui/about.js';
 import { openInstructions } from './ui/instructions.js';
 import { createPhase1 } from './ui/phase1.js';
 import { createPhase2 } from './ui/phase2.js';
 import { createPhase3 } from './ui/phase3.js';
+import { createPhase4 } from './ui/phase4.js';
 import { createAdministration } from './ui/administration.js';
 import { openHelp } from './ui/help.js';
 import { openConfirm } from './ui/confirm.js';
-import { playCompletionCelebration } from './ui/celebration.js';
-import {
-  clearAllProgress,
-  clearPhaseProgress,
-  loadPhaseProgress,
-  savePhaseProgress
-} from './persistence/storage.js';
 
 const elements = {
   app: document.getElementById('app'),
   splash: document.getElementById('splash-screen'),
+  home: document.getElementById('home-content'),
   game: document.getElementById('game-screen'),
   hud: document.getElementById('hud'),
   cityMain: document.getElementById('city-main'),
@@ -50,21 +114,24 @@ const elements = {
   phaseHosts: {
     'centro-de-distribuicao': document.getElementById('phase-host-fase-1'),
     'rede-de-dependencias': document.getElementById('phase-host-fase-2'),
-    'cidade-organizada': document.getElementById('phase-host-fase-3')
+    'cidade-organizada': document.getElementById('phase-host-fase-3'),
+    'gestao-de-funcionarios-e-pedidos': document.getElementById('phase-host-fase-4')
   },
   svg: document.getElementById('city-svg'),
   panel: document.getElementById('info-panel'),
   cityStage: document.querySelector('.city-stage'),
+  pageScreen: document.getElementById('page-screen'),
+  pageHost: document.getElementById('page-host'),
   instructionsRoot: document.getElementById('instructions-root'),
   helpRoot: document.getElementById('help-root'),
-  confirmRoot: document.getElementById('confirm-root'),
-  startButton: document.getElementById('btn-start')
+  confirmRoot: document.getElementById('confirm-root')
 };
 
 let cityData = null;
 let phase1Data = null;
 let phase2Data = null;
 let phase3Data = null;
+let phase4Data = null;
 let missionData = null;
 let missionController = null;
 let glossaryData = null;
@@ -72,10 +139,25 @@ let tipsData = null;
 let phaseDefinitions = [];
 let phaseControllers = new Map();
 let phaseScores = {};
+let activePlayer = null;
+let activeCharacter = null;
+let activeCatalog = null;
+let activeQuestCatalog = null;
+let activeKnowledge = null;
+let activeProgression = null;
+let characterNotice = '';
+let characterError = '';
+let adminNotice = '';
 let state = null;
 let currentScreen = null;
 let currentPhaseId = null;
 let panelBuildingId;
+let showIdentity = false;
+let profileNotice = '';
+let profileSaveError = '';
+let rankingState = createEmptyRankingState();
+let syncCleanup = null;
+const phaseAttempts = new Map();
 
 boot();
 
@@ -86,6 +168,7 @@ async function boot() {
       phase1Response,
       phase2Response,
       phase3Response,
+      phase4Response,
       missionResponse,
       glossaryResponse,
       tipsResponse
@@ -94,45 +177,32 @@ async function boot() {
       fetch(new URL('../data/phases/fase-1.json', import.meta.url)),
       fetch(new URL('../data/phases/fase-2.json', import.meta.url)),
       fetch(new URL('../data/phases/fase-3.json', import.meta.url)),
+      fetch(new URL('../data/phases/fase-4.json', import.meta.url)),
       fetch(new URL('../data/missions/administracao.json', import.meta.url)),
       fetch(new URL('../data/glossary.json', import.meta.url)),
       fetch(new URL('../data/tips.json', import.meta.url))
     ]);
 
-    if (!cityResponse.ok) {
-      throw new Error(`Falha ao carregar data/city.json (HTTP ${cityResponse.status}).`);
-    }
-    if (!phase1Response.ok) {
-      throw new Error(
-        `Falha ao carregar data/phases/fase-1.json (HTTP ${phase1Response.status}).`
-      );
-    }
-    if (!phase2Response.ok) {
-      throw new Error(
-        `Falha ao carregar data/phases/fase-2.json (HTTP ${phase2Response.status}).`
-      );
-    }
-    if (!phase3Response.ok) {
-      throw new Error(
-        `Falha ao carregar data/phases/fase-3.json (HTTP ${phase3Response.status}).`
-      );
-    }
-    if (!missionResponse.ok) {
-      throw new Error(
-        `Falha ao carregar data/missions/administracao.json (HTTP ${missionResponse.status}).`
-      );
-    }
-    if (!glossaryResponse.ok) {
-      throw new Error(`Falha ao carregar data/glossary.json (HTTP ${glossaryResponse.status}).`);
-    }
-    if (!tipsResponse.ok) {
-      throw new Error(`Falha ao carregar data/tips.json (HTTP ${tipsResponse.status}).`);
+    for (const [name, response] of [
+      ['data/city.json', cityResponse],
+      ['data/phases/fase-1.json', phase1Response],
+      ['data/phases/fase-2.json', phase2Response],
+      ['data/phases/fase-3.json', phase3Response],
+      ['data/phases/fase-4.json', phase4Response],
+      ['data/missions/administracao.json', missionResponse],
+      ['data/glossary.json', glossaryResponse],
+      ['data/tips.json', tipsResponse]
+    ]) {
+      if (!response.ok) {
+        throw new Error(`Falha ao carregar ${name} (HTTP ${response.status}).`);
+      }
     }
 
     cityData = await cityResponse.json();
     phase1Data = await phase1Response.json();
     phase2Data = await phase2Response.json();
     phase3Data = await phase3Response.json();
+    phase4Data = await phase4Response.json();
     missionData = await missionResponse.json();
     glossaryData = await glossaryResponse.json();
     tipsData = await tipsResponse.json();
@@ -161,6 +231,13 @@ async function boot() {
       throw new Error(`Dados da fase 3 inválidos: ${phase3Validation.errors.join(' ')}`);
     }
 
+    const phase4Validation = validatePhase4Data(phase4Data, {
+      cityBuildingIds: cityData.city.buildings.map((building) => building.id)
+    });
+    if (!phase4Validation.valid) {
+      throw new Error(`Dados da fase 4 inválidos: ${phase4Validation.errors.join(' ')}`);
+    }
+
     const missionValidation = validateMissionData(missionData);
     if (!missionValidation.valid) {
       throw new Error(`Dados da missão inválidos: ${missionValidation.errors.join(' ')}`);
@@ -178,78 +255,139 @@ async function boot() {
     return;
   }
 
+  activeCatalog = loadCatalog();
+  activeQuestCatalog = loadQuestCatalog();
+  activeKnowledge = loadKnowledgeCatalog();
   state = createInitialState(cityData);
-
-  const { startButton } = initSplash({
-    onStart: () => navigate({ screen: 'city', buildingId: null }),
-    onHowToPlay: () => openInstructions()
-  });
-
-  elements.startButton = startButton || elements.startButton;
-
   renderCity(elements.svg, cityData, {
     onSelect: (buildingId) => navigate({ screen: 'city', buildingId })
   });
 
-  const phase1Controller = createPhase1({
-    data: phase1Data,
-    snapshot: loadPhaseProgress(phase1Data.id),
-    onScoreChange: (score) => updatePhaseScore(phase1Data.id, score),
-    onStateChange: (snapshot) => savePhaseProgress(phase1Data.id, snapshot),
-    onComplete: () => {
-      playCompletionCelebration({ label: '1FN', title: 'Medalha conquistada' });
-      setBuildingNormalized(elements.svg, 'pedido', true, '1FN');
-    },
-    onReset: () => {
-      clearPhaseProgress(phase1Data.id);
-      setBuildingNormalized(elements.svg, 'pedido', false, '1FN');
-    },
-    onExit: () => navigate({ screen: 'city', buildingId: 'pedido' })
+  activePlayer = getActivePlayer();
+
+  if (activePlayer) {
+    activeCharacter = activePlayer.needsCharacterSetup
+      ? getPrimaryCharacter(activePlayer.id)
+      : ensurePrimaryCharacter(activePlayer);
+
+    if (!activePlayer.needsCharacterSetup) {
+      activePlayer = getActivePlayer();
+    }
+
+    activeProgression = activeCharacter
+      ? ensureProgression(activeCharacter, activeCatalog)
+      : null;
+
+    initializePlayerSession();
+  }
+
+  window.addEventListener('hashchange', handleRoute);
+  document.addEventListener('keydown', handleGlobalKeydown);
+  handleRoute();
+  document.documentElement.dataset.appReady = 'true';
+}
+
+function initializePlayerSession() {
+  const definitions = buildPhaseDefinitions();
+  const controllers = [];
+
+  for (const definition of definitions) {
+    const controller = definition.create({
+      data: definition.data,
+      snapshot: loadPhaseSnapshot(activePlayer.id, definition.data.id),
+      onScoreChange: (score) => updatePhaseScore(definition.data.id, score),
+      onStateChange: (snapshot) => {
+        savePhaseSnapshot(activePlayer.id, definition.data.id, snapshot);
+        activePlayer = getActivePlayer();
+      },
+      onHint: () => trackPhaseHint(definition.data.id),
+      onValidation: () => trackPhaseValidation(definition.data.id),
+      onComplete: (nextState) => {
+        playCompletionCelebration({
+          label: definition.medalLabel,
+          title: 'Medalha conquistada'
+        });
+        queueCompletedPhase(definition, nextState);
+        refreshCityEvolution();
+        syncNormalizaQuest();
+      },
+      onReset: () => {
+        clearPhaseSnapshot(activePlayer.id, definition.data.id);
+        removePendingPhase(definition.data.id);
+        phaseAttempts.delete(definition.data.id);
+        refreshCityEvolution();
+        ensurePhaseAttempt(definition.data.id);
+      },
+      onExit: () => navigate({ screen: 'city', buildingId: definition.buildingId })
+    });
+
+    controllers.push({ ...definition, controller });
+  }
+
+  phaseDefinitions = controllers.map(({ create, toSnapshot, ...definition }) => definition);
+  phaseControllers = new Map(
+    phaseDefinitions.map((definition) => [definition.data.id, definition.controller])
+  );
+
+  for (const definition of phaseDefinitions) {
+    definition.controller.mount(elements.phaseHosts[definition.data.id]);
+  }
+
+  missionController = createAdministration({
+    data: missionData,
+    onComplete: () =>
+      playCompletionCelebration({ label: 'Missão', title: 'Missão especial concluída' }),
+    onExit: () => navigate({ screen: 'city', buildingId: null })
+  });
+  missionController.mount(elements.missionHost);
+
+  refreshCityEvolution();
+
+  phaseScores = Object.fromEntries(
+    phaseDefinitions.map((definition) => [
+      definition.data.id,
+      definition.controller.getState().score
+    ])
+  );
+  state = setScore(state, totalPhaseScore());
+
+  renderHudForPlayer();
+  syncCleanup = attachSynchronization(activePlayer.id, () => {
+    confirmNormalizaQuestWithServer();
+
+    if (state?.screen === 'splash' || state?.screen === 'profile' || state?.screen === 'ranking') {
+      rankingState = createEmptyRankingState();
+      render();
+    }
   });
 
-  const phase2Controller = createPhase2({
-    data: phase2Data,
-    snapshot: loadPhaseProgress(phase2Data.id),
-    onScoreChange: (score) => updatePhaseScore(phase2Data.id, score),
-    onStateChange: (snapshot) => savePhaseProgress(phase2Data.id, snapshot),
-    onComplete: () => {
-      playCompletionCelebration({ label: '2FN', title: 'Medalha conquistada' });
-      applyPhase2CityEvolution();
-    },
-    onReset: () => {
-      clearPhaseProgress(phase2Data.id);
-      removePhase2CityEvolution();
-    },
-    onExit: () => navigate({ screen: 'city', buildingId: 'produto' })
-  });
+  queueCompletedPhaseSnapshots(
+    activePlayer.id,
+    phaseDefinitions.map((definition) => definition.data.id)
+  );
 
-  const phase3Controller = createPhase3({
-    data: phase3Data,
-    snapshot: loadPhaseProgress(phase3Data.id),
-    onScoreChange: (score) => updatePhaseScore(phase3Data.id, score),
-    onStateChange: (snapshot) => savePhaseProgress(phase3Data.id, snapshot),
-    onComplete: () => {
-      playCompletionCelebration({ label: '3FN', title: 'Medalha conquistada' });
-      applyPhase3CityEvolution();
-    },
-    onReset: () => {
-      clearPhaseProgress(phase3Data.id);
-      removePhase3CityEvolution();
-    },
-    onExit: () => navigate({ screen: 'city', buildingId: 'funcionario' })
-  });
+  syncNormalizaQuest();
 
-  phaseControllers.set(phase1Data.id, phase1Controller);
-  phaseControllers.set(phase2Data.id, phase2Controller);
-  phaseControllers.set(phase3Data.id, phase3Controller);
+  if (isOnline()) {
+    ensureRemotePlayer(activePlayer.id).catch(() => {});
+    window.setTimeout(synchronizeInBackground, 500);
 
-  phaseDefinitions = [
+    if (currentProgress().completedPhases >= currentProgress().totalPhases) {
+      window.setTimeout(confirmNormalizaQuestWithServer, 1800);
+    }
+  }
+}
+
+function buildPhaseDefinitions() {
+  return [
     {
       data: phase1Data,
-      controller: phase1Controller,
+      create: createPhase1,
+      toSnapshot: snapshotPhase1,
       phaseNumber: 1,
       medalLabel: '1FN',
       buildingId: 'pedido',
+      buildingIds: ['pedido'],
       startLabel: 'Entrar no Centro de Distribuição',
       revisitLabel: 'Revisitar Centro de Distribuição',
       availableNote:
@@ -260,10 +398,12 @@ async function boot() {
     },
     {
       data: phase2Data,
-      controller: phase2Controller,
+      create: createPhase2,
+      toSnapshot: snapshotPhase2,
       phaseNumber: 2,
       medalLabel: '2FN',
       buildingId: 'produto',
+      buildingIds: ['produto'],
       startLabel: 'Entrar na Rede de Dependências',
       revisitLabel: 'Revisitar Rede de Dependências',
       availableNote:
@@ -274,10 +414,12 @@ async function boot() {
     },
     {
       data: phase3Data,
-      controller: phase3Controller,
+      create: createPhase3,
+      toSnapshot: snapshotPhase3,
       phaseNumber: 3,
       medalLabel: '3FN',
       buildingId: 'funcionario',
+      buildingIds: ['funcionario'],
       startLabel: 'Entrar em Cidade Organizada',
       revisitLabel: 'Revisitar Cidade Organizada',
       availableNote:
@@ -285,87 +427,192 @@ async function boot() {
       completedNote:
         'Fase 3 concluída: FUNCIONÁRIO está na 3FN. Localização foi separada em DEPARTAMENTO.',
       normalizedAttributes: ['cpf', 'nome', 'departamento']
+    },
+    {
+      data: phase4Data,
+      create: createPhase4,
+      toSnapshot: snapshotPhase4,
+      phaseNumber: 4,
+      medalLabel: '3FN',
+      buildingId: 'pedido',
+      buildingIds: ['pedido', 'funcionario'],
+      startLabel: 'Entrar em Gestão de Funcionários e Pedidos',
+      revisitLabel: 'Revisitar Gestão de Funcionários e Pedidos',
+      availableNote:
+        'Fase 4 disponível. Exercício complementar de 3FN com PEDIDO, FUNCIONÁRIO e DEPARTAMENTO.',
+      completedNote:
+        'Fase 4 concluída: PEDIDO, FUNCIONÁRIO e DEPARTAMENTO formam uma decomposição em 3FN.',
+      normalizedAttributes: ['pedido', 'cliente', 'funcionario']
     }
   ];
+}
 
-  missionController = createAdministration({
-    data: missionData,
-    onComplete: () => playCompletionCelebration({ label: 'Missão', title: 'Missão especial concluída' }),
-    onExit: () => navigate({ screen: 'city', buildingId: null })
+function queueCompletedPhase(definition, nextState) {
+  if (!activePlayer) {
+    return;
+  }
+
+  queuePhaseCompletion({
+    playerId: activePlayer.id,
+    phaseId: definition.data.id,
+    snapshot: definition.toSnapshot(nextState),
+    attemptId: phaseAttempts.get(definition.data.id) ?? null
   });
+  activePlayer = getActivePlayer();
+  window.setTimeout(synchronizeInBackground, 1200);
+}
 
-  phase1Controller.mount(elements.phaseHosts[phase1Data.id]);
-  phase2Controller.mount(elements.phaseHosts[phase2Data.id]);
-  phase3Controller.mount(elements.phaseHosts[phase3Data.id]);
-  missionController.mount(elements.missionHost);
-
-  if (phase1Controller.getState().completed) {
-    setBuildingNormalized(elements.svg, 'pedido', true, '1FN');
+function ensurePhaseAttempt(phaseId) {
+  if (
+    !activePlayer ||
+    phaseAttempts.has(phaseId) ||
+    !phaseControllers.has(phaseId) ||
+    !isOnline()
+  ) {
+    return;
   }
 
-  if (phase2Controller.getState().completed) {
-    applyPhase2CityEvolution();
+  const playerId = activePlayer.id;
+  phaseAttempts.set(phaseId, null);
+
+  ensureRemotePlayer(playerId)
+    .then(() => startRemoteAttempt({ playerId, phaseId }))
+    .then((response) => {
+      if (activePlayer?.id !== playerId) {
+        return;
+      }
+
+      const attemptId = response?.attempt?.id;
+      if (attemptId) {
+        phaseAttempts.set(phaseId, attemptId);
+      }
+    })
+    .catch(() => {
+      phaseAttempts.delete(phaseId);
+    });
+}
+
+function trackPhaseHint(phaseId) {
+  const attemptId = phaseAttempts.get(phaseId);
+
+  if (!attemptId) {
+    return;
   }
 
-  if (phase3Controller.getState().completed) {
-    applyPhase3CityEvolution();
+  recordRemoteHint({ attemptId }).catch(() => {});
+}
+
+function trackPhaseValidation(phaseId) {
+  const attemptId = phaseAttempts.get(phaseId);
+
+  if (!attemptId) {
+    return;
   }
 
-  phaseScores = Object.fromEntries(
-    phaseDefinitions.map((definition) => [definition.data.id, definition.controller.getState().score])
+  recordRemoteValidation({ attemptId }).catch(() => {});
+}
+
+function removePendingPhase(phaseId) {
+  if (!activePlayer) {
+    return;
+  }
+
+  const pending = loadPendingMatches(activePlayer.id).filter(
+    (match) => match.phaseId !== phaseId
   );
-  state = setScore(state, totalPhaseScore());
+  savePendingMatches(activePlayer.id, pending);
+}
 
-  renderHud(elements.hud, getHud(state), {
-    onMenu: () => navigate({ screen: 'splash', buildingId: null })
+function synchronizeInBackground() {
+  if (!activePlayer || !isOnline()) {
+    return;
+  }
+
+  const playerId = activePlayer.id;
+  queueCompletedPhaseSnapshots(
+    playerId,
+    phaseDefinitions.map((definition) => definition.data.id)
+  );
+
+  synchronizePlayer(playerId).then((result) => {
+    if (!activePlayer || activePlayer.id !== playerId) {
+      return;
+    }
+
+    if (result.synced > 0) {
+      rankingState = createEmptyRankingState();
+      activePlayer = getActivePlayer();
+      if (
+        state?.screen === 'splash' ||
+        state?.screen === 'profile' ||
+        state?.screen === 'ranking'
+      ) {
+        render();
+      }
+    }
+
+    confirmNormalizaQuestWithServer();
   });
-
-  window.addEventListener('hashchange', handleRoute);
-  document.addEventListener('keydown', handleGlobalKeydown);
-  handleRoute();
-  document.documentElement.dataset.appReady = 'true';
 }
 
-function applyPhase2CityEvolution() {
-  if (!phase2Data?.cityEvolution) {
+function confirmNormalizaQuestWithServer() {
+  if (!activePlayer || !activeCharacter || !isOnline()) {
     return;
   }
 
-  addCityExtension(elements.svg, cityData, phase2Data.cityEvolution, phase2Data.id);
-}
-
-function removePhase2CityEvolution() {
-  removeCityExtension(elements.svg, phase2Data.id);
-
-  for (const normalized of phase2Data?.cityEvolution?.normalizedBuildings || []) {
-    setBuildingNormalized(
-      elements.svg,
-      normalized.id,
-      false,
-      normalized.badgeLabel || '2FN'
-    );
-  }
-}
-
-function applyPhase3CityEvolution() {
-  if (!phase3Data?.cityEvolution) {
+  const progress = currentProgress();
+  if (progress.completedPhases < progress.totalPhases) {
     return;
   }
 
-  addCityExtension(elements.svg, cityData, phase3Data.cityEvolution, phase3Data.id);
+  confirmNormalizaQuest({
+    playerId: activePlayer.id,
+    characterId: activeCharacter.id
+  }).catch(() => {});
 }
 
-function removePhase3CityEvolution() {
-  removeCityExtension(elements.svg, phase3Data.id);
-
-  for (const normalized of phase3Data?.cityEvolution?.normalizedBuildings || []) {
-    setBuildingNormalized(
-      elements.svg,
-      normalized.id,
-      false,
-      normalized.badgeLabel || '3FN'
-    );
+function refreshCityEvolution() {
+  if (!activePlayer || phaseDefinitions.length === 0) {
+    return;
   }
+
+  for (const definition of phaseDefinitions) {
+    removeCityExtension(elements.svg, definition.data.id);
+  }
+
+  setBuildingNormalized(elements.svg, 'pedido', false, '1FN');
+  setBuildingNormalized(elements.svg, 'produto', false, '2FN');
+  setBuildingNormalized(elements.svg, 'funcionario', false, '3FN');
+
+  const ordered = [...phaseDefinitions].sort(
+    (first, second) => first.phaseNumber - second.phaseNumber
+  );
+
+  for (const definition of ordered) {
+    if (!definition.controller.getState().completed) {
+      continue;
+    }
+
+    if (definition.phaseNumber === 1) {
+      setBuildingNormalized(elements.svg, 'pedido', true, '1FN');
+    } else if (definition.data.cityEvolution) {
+      addCityExtension(
+        elements.svg,
+        cityData,
+        definition.data.cityEvolution,
+        definition.data.id
+      );
+    }
+  }
+}
+
+function renderHudForPlayer() {
+  const rank = getCachedRankInfo(activePlayer?.id)?.rank ?? null;
+  renderHud(elements.hud, getHud(state), {
+    onMenu: () => navigate({ screen: 'splash', buildingId: null }),
+    player: activePlayer,
+    rank
+  });
 }
 
 function updatePhaseScore(phaseId, score) {
@@ -376,6 +623,548 @@ function updatePhaseScore(phaseId, score) {
 
 function totalPhaseScore() {
   return Object.values(phaseScores).reduce((total, score) => total + score, 0);
+}
+
+function currentProgress() {
+  if (phaseDefinitions.length === 0) {
+    return buildGameProgress([]);
+  }
+
+  return buildGameProgress(
+    phaseDefinitions.map((definition) => ({
+      id: definition.data.id,
+      title: definition.data.title,
+      phaseNumber: definition.phaseNumber,
+      medalLabel: definition.medalLabel,
+      completed: definition.controller.getState().completed,
+      score: definition.controller.getState().score,
+      maxScore: Number.isFinite(definition.data.scoring?.max)
+        ? definition.data.scoring.max
+        : 100
+    }))
+  );
+}
+
+function getCachedRankInfo(playerId) {
+  if (!playerId) {
+    return null;
+  }
+
+  const cache = loadRankingCache(playerId);
+  const rows = Array.isArray(cache?.rows) ? cache.rows : [];
+
+  if (rows.length === 0) {
+    return null;
+  }
+
+  const board = buildLeaderboard(rows, playerId);
+
+  if (!board.current) {
+    return null;
+  }
+
+  return {
+    rank: board.current.rank,
+    pointsToNext: board.next?.difference ?? null
+  };
+}
+
+function getProfileSummary() {
+  if (!activePlayer) {
+    return null;
+  }
+
+  const sync = getPlayerSyncState(activePlayer.id);
+
+  return buildProfileSummary({
+    player: activePlayer,
+    progress: currentProgress(),
+    rankInfo: getCachedRankInfo(activePlayer.id),
+    pendingCount: sync.pendingCount,
+    syncStatus: sync.syncStatus
+  });
+}
+
+function getAchievements() {
+  return buildAchievements(currentProgress(), {
+    missionCompleted: false
+  });
+}
+
+function renderHomeScreen() {
+  const summary = getProfileSummary();
+  const profiles = listLocalPlayers();
+  const rankingMessage = summary?.rank ? `#${summary.rank}` : 'Ainda não ranqueado';
+
+  renderHome(elements.home, {
+    player: activePlayer,
+    character: activeCharacter,
+    catalog: activeCatalog,
+    progression: activeProgression,
+    profiles,
+    summary,
+    showIdentity,
+    hasLegacy: hasLegacyProgress(),
+    rankingMessage,
+    onSelectProfile: switchPlayer,
+    onCreateProfile: createPlayer,
+    onShowIdentity: () => {
+      showIdentity = true;
+      render();
+      requestAnimationFrame(() => elements.home.querySelector('#player-name')?.focus());
+    },
+    onStart: () => {
+      if (!activePlayer) {
+        showIdentity = true;
+        render();
+        return;
+      }
+
+      if (!activeCharacter) {
+        navigate({ screen: 'character' });
+        return;
+      }
+
+      navigate({ screen: 'city', buildingId: null });
+    },
+    onOpenProfile: () => navigate({ screen: 'profile' }),
+    onOpenCharacter: () => navigate({ screen: 'character' }),
+    onOpenRanking: () => navigate({ screen: 'ranking' }),
+    onOpenAchievements: () => navigate({ screen: 'achievements' }),
+    onOpenChallenges: () => navigate({ screen: 'challenges' }),
+    onOpenKnowledge: () => navigate({ screen: 'knowledge' }),
+    onOpenHelp: () => openHelp({ glossary: glossaryData, tips: tipsData, context: 'general' }),
+    onOpenAbout: () => navigate({ screen: 'about' })
+  });
+}
+
+function createPlayer({ name, avatarId, bio = '' }) {
+  const player = createLocalPlayer({ name, avatarId, bio });
+  activePlayer = player;
+  activeCharacter = null;
+  characterNotice = '';
+  characterError = '';
+  showIdentity = false;
+  reloadToHome();
+}
+
+function switchPlayer(playerId) {
+  const player = setActivePlayer(playerId);
+
+  if (!player) {
+    return;
+  }
+
+  activePlayer = player;
+  showIdentity = false;
+  reloadToHome();
+}
+
+function reloadToHome() {
+  if (window.location.hash !== '#/') {
+    window.location.hash = '#/';
+  }
+
+  window.location.reload();
+}
+
+function renderPageScreen() {
+  if (!activePlayer) {
+    window.history.replaceState(null, '', '#/');
+    state = applyRoute(state, { screen: 'splash', buildingId: null });
+    renderHomeScreen();
+    return;
+  }
+
+  const summary = getProfileSummary();
+  const achievements = getAchievements();
+
+  switch (state.screen) {
+    case 'admin':
+      renderAdminPage(elements.pageHost, {
+        player: activePlayer,
+        profiles: listLocalPlayers(),
+        images: loadImageAssets(),
+        catalog: activeCatalog,
+        notice: adminNotice,
+        onBack: () => navigate({ screen: 'splash' }),
+        onSavePlayer: saveAdminPlayer,
+        onSaveImage: saveAdminImage,
+        onSaveArchetype: saveAdminArchetype,
+        onCreateArchetype: createAdminArchetype,
+        onSaveAttribute: saveAdminAttribute,
+        onCreateAttribute: createAdminAttribute,
+        onSaveValues: saveAdminValues
+      });
+      break;
+
+    case 'character':
+      renderCharacterPage(elements.pageHost, {
+        player: activePlayer,
+        character: activeCharacter,
+        catalog: activeCatalog,
+        progression: activeProgression,
+        notice: characterNotice,
+        error: characterError,
+        onBack: () => navigate({ screen: 'splash' }),
+        onSave: saveCharacterProfile
+      });
+      break;
+
+    case 'profile':
+      renderProfilePage(elements.pageHost, {
+        player: activePlayer,
+        character: activeCharacter,
+        catalog: activeCatalog,
+        summary,
+        achievements,
+        history: currentProgress().phases,
+        profiles: listLocalPlayers(),
+        notice: profileNotice,
+        error: profileSaveError,
+        onBack: () => navigate({ screen: 'splash' }),
+        onSave: savePlayerProfile,
+        onOpenCharacter: () => navigate({ screen: 'character' }),
+        onOpenAdmin: () => navigate({ screen: 'admin' }),
+        onSwitch: () => {
+          showIdentity = true;
+          navigate({ screen: 'splash' });
+        },
+        onOpenRanking: () => navigate({ screen: 'ranking' })
+      });
+      break;
+
+    case 'knowledge':
+      renderKnowledgePage(elements.pageHost, {
+        player: activePlayer,
+        character: activeCharacter,
+        knowledgeCatalog: activeKnowledge,
+        characterCatalog: activeCatalog,
+        questCatalog: activeQuestCatalog,
+        progression: activeProgression,
+        questProgress: activeCharacter
+          ? loadQuestProgress(activeCharacter.id).quests
+          : {},
+        onBack: () => navigate({ screen: 'splash' }),
+        onOpenJourney: () => navigate({ screen: 'challenges' }),
+        onStartQuest: startCharacterQuest
+      });
+      break;
+
+    case 'ranking':
+      ensureRankingLoaded();
+      renderLeaderboardPage(elements.pageHost, {
+        player: activePlayer,
+        board: rankingState.board,
+        loading: rankingState.loading,
+        offline: rankingState.offline,
+        updatedAt: rankingState.updatedAt,
+        onBack: () => navigate({ screen: 'splash' }),
+        onRefresh: refreshRanking
+      });
+      break;
+
+    case 'challenges':
+      renderChallengesPage(elements.pageHost, {
+        player: activePlayer,
+        character: activeCharacter,
+        catalog: activeQuestCatalog,
+        progress: activeCharacter
+          ? loadQuestProgress(activeCharacter.id).quests
+          : {},
+        onBack: () => navigate({ screen: 'splash' }),
+        onStartQuest: startCharacterQuest
+      });
+      break;
+
+    case 'achievements':
+      renderAchievementsPage(elements.pageHost, {
+        player: activePlayer,
+        achievements,
+        summary,
+        onBack: () => navigate({ screen: 'splash' })
+      });
+      break;
+
+    case 'about':
+      renderAboutPage(elements.pageHost, {
+        player: activePlayer,
+        onBack: () => navigate({ screen: 'splash' }),
+        onHowToPlay: () => openInstructions()
+      });
+      break;
+
+    default:
+      navigate({ screen: 'splash' });
+  }
+}
+
+function savePlayerProfile(patch) {
+  const updated = updateLocalPlayer(activePlayer.id, patch);
+
+  if (!updated) {
+    profileSaveError = 'Não foi possível atualizar o perfil.';
+    render();
+    return;
+  }
+
+  activePlayer = updated;
+  profileNotice = 'Perfil atualizado.';
+  profileSaveError = '';
+  renderHudForPlayer();
+  render();
+
+  if (isOnline()) {
+    ensureRemotePlayer(activePlayer.id).catch(() => {});
+  }
+}
+
+function syncNormalizaQuest() {
+  if (!activeCharacter || !activeQuestCatalog) {
+    return;
+  }
+
+  const quest = activeQuestCatalog.quests.find((item) => item.id === 'normaliza');
+  const progress = currentProgress();
+
+  if (!quest || progress.completedPhases < progress.totalPhases) {
+    return;
+  }
+
+  const result = awardQuestCompletion({
+    character: activeCharacter,
+    quest,
+    score: progress.totalScore,
+    catalog: activeCatalog
+  });
+
+  if (result.progression) {
+    activeProgression = result.progression;
+  }
+
+  if (result.character) {
+    activeCharacter = result.character;
+  }
+}
+
+function startCharacterQuest(quest) {
+  if (!activeCharacter) {
+    navigate({ screen: 'character' });
+    return;
+  }
+
+  const progress = loadQuestProgress(activeCharacter.id).quests;
+  const status = questStatusFor(quest, progress, activeQuestCatalog.dependencies);
+
+  if (status === 'locked') {
+    return;
+  }
+
+  if (status !== 'completed') {
+    startQuest(activeCharacter.id, quest.id);
+  }
+
+  syncNormalizaQuest();
+
+  if (quest.moduleKey === 'normaliza') {
+    navigate({ screen: 'city', buildingId: null });
+  }
+}
+
+function saveAdminPlayer(playerId, patch) {
+  const updated = updateLocalPlayer(playerId, patch);
+
+  if (!updated) {
+    adminNotice = 'Não foi possível atualizar o perfil.';
+    render();
+    return;
+  }
+
+  if (activePlayer?.id === playerId) {
+    activePlayer = updated;
+  }
+
+  adminNotice = 'Perfil atualizado.';
+  render();
+}
+
+function saveAdminImage(imageId, patch) {
+  const updated = updateImageAsset(imageId, patch);
+
+  if (!updated) {
+    adminNotice = 'Não foi possível atualizar a imagem.';
+    render();
+    return;
+  }
+
+  adminNotice = 'Imagem atualizada.';
+  render();
+}
+
+function saveAdminArchetype(archetypeId, patch) {
+  const saved = updateArchetype(archetypeId, patch);
+
+  if (!saved) {
+    adminNotice = 'Não foi possível salvar o arquétipo.';
+    render();
+    return;
+  }
+
+  activeCatalog = loadCatalog();
+  adminNotice = 'Arquétipo atualizado.';
+  render();
+}
+
+function createAdminArchetype(patch) {
+  createArchetype(patch);
+  activeCatalog = loadCatalog();
+  adminNotice = 'Arquétipo criado.';
+  render();
+}
+
+function saveAdminAttribute(attributeId, patch) {
+  const saved = updateAttribute(attributeId, patch);
+
+  if (!saved) {
+    adminNotice = 'Não foi possível salvar o atributo.';
+    render();
+    return;
+  }
+
+  activeCatalog = loadCatalog();
+  adminNotice = 'Atributo atualizado.';
+  render();
+}
+
+function createAdminAttribute(patch) {
+  createAttribute(patch);
+  activeCatalog = loadCatalog();
+  adminNotice = 'Atributo criado.';
+  render();
+}
+
+function saveAdminValues(values) {
+  let saved = true;
+
+  for (const [archetypeId, archetypeValues] of Object.entries(values)) {
+    if (!setArchetypeValues(archetypeId, archetypeValues)) {
+      saved = false;
+      break;
+    }
+  }
+
+  activeCatalog = loadCatalog();
+  adminNotice = saved
+    ? 'Valores iniciais atualizados.'
+    : 'Não foi possível salvar todos os valores.';
+  render();
+}
+
+function saveCharacterProfile(patch) {
+  if (!activePlayer) {
+    return;
+  }
+
+  const saved = activeCharacter
+    ? updateCharacter(activePlayer.id, activeCharacter.id, patch)
+    : createCharacterForPlayer(activePlayer, patch);
+
+  if (!saved) {
+    characterError = 'Não foi possível salvar o personagem.';
+    render();
+    return;
+  }
+
+  activeCharacter = saved;
+  activeProgression = ensureProgression(saved, activeCatalog);
+  updateLocalPlayer(activePlayer.id, { needsCharacterSetup: false });
+  activePlayer = getActivePlayer();
+  characterNotice = 'Personagem salvo.';
+  characterError = '';
+  render();
+}
+
+function ensureRankingLoaded() {
+  if (!activePlayer || rankingState.loading) {
+    return;
+  }
+
+  if (rankingState.loaded && rankingState.playerId === activePlayer.id) {
+    return;
+  }
+
+  const playerId = activePlayer.id;
+  rankingState = {
+    ...rankingState,
+    playerId,
+    loading: true,
+    loaded: false,
+    offline: false
+  };
+
+  loadSharedLeaderboard(playerId).then((result) => {
+    if (!activePlayer || activePlayer.id !== playerId || state?.screen !== 'ranking') {
+      return;
+    }
+
+    rankingState = {
+      playerId,
+      loading: false,
+      loaded: true,
+      board: result,
+      offline: result.offline,
+      updatedAt: result.updatedAt,
+      error: result.error
+    };
+    render();
+  });
+}
+
+function refreshRanking() {
+  if (!activePlayer) {
+    return;
+  }
+
+  const playerId = activePlayer.id;
+  const reload = () => {
+    if (!activePlayer || activePlayer.id !== playerId || state?.screen !== 'ranking') {
+      return;
+    }
+
+    rankingState = createEmptyRankingState();
+    render();
+  };
+
+  if (!isOnline()) {
+    reload();
+    return;
+  }
+
+  rankingState = {
+    ...createEmptyRankingState(),
+    playerId,
+    loading: true
+  };
+  render();
+
+  queueCompletedPhaseSnapshots(
+    playerId,
+    phaseDefinitions.map((definition) => definition.data.id)
+  );
+
+  synchronizePlayer(playerId).catch(() => {}).then(reload);
+}
+
+function createEmptyRankingState() {
+  return {
+    playerId: null,
+    loading: false,
+    loaded: false,
+    board: null,
+    offline: false,
+    updatedAt: null,
+    error: null
+  };
 }
 
 function getPhaseDefinition(phaseId) {
@@ -400,6 +1189,11 @@ function handleRoute() {
 
   let route = parseRoute(window.location.hash);
 
+  if (!activePlayer && route.screen !== 'splash') {
+    window.history.replaceState(null, '', '#/');
+    route = { screen: 'splash', buildingId: null };
+  }
+
   if (route.screen === 'phase' && !phaseControllers.has(route.phaseId)) {
     window.history.replaceState(null, '', '#/cidade');
     route = { screen: 'city', buildingId: null };
@@ -410,31 +1204,63 @@ function handleRoute() {
     route = { screen: 'city', buildingId: null };
   }
 
+  if (route.screen === 'city' && route.buildingId && !activePlayer) {
+    window.history.replaceState(null, '', '#/');
+    route = { screen: 'splash', buildingId: null };
+  }
+
+  if (
+    activePlayer &&
+    !activeCharacter &&
+    ['city', 'phase', 'mission'].includes(route.screen)
+  ) {
+    window.history.replaceState(null, '', '#/personagem');
+    route = { screen: 'character', buildingId: null };
+  }
+
+  if (route.screen === 'ranking' && currentScreen !== 'ranking') {
+    rankingState = createEmptyRankingState();
+  }
+
+  if (route.screen !== 'profile') {
+    profileNotice = '';
+    profileSaveError = '';
+  }
+
   state = applyRoute(state, route);
 
   if (route.screen === 'city' && route.buildingId && !state.selectedBuildingId) {
     window.history.replaceState(null, '', '#/cidade');
   }
 
+  if (route.screen === 'phase') {
+    ensurePhaseAttempt(route.phaseId);
+  }
+
   render();
 }
 
 function render() {
+  const isSplash = state.screen === 'splash';
   const isCity = state.screen === 'city';
   const isPhase = state.screen === 'phase';
   const isMission = state.screen === 'mission';
+  const isPage = ['profile', 'character', 'knowledge', 'ranking', 'achievements', 'about', 'challenges', 'admin'].includes(state.screen);
   const isGame = isCity || isPhase || isMission;
   const activePhase = isPhase ? getPhaseDefinition(state.activePhaseId) : null;
   const enteringCity = isCity && currentScreen !== 'city';
   const enteringPhase =
     isPhase && (currentScreen !== 'phase' || currentPhaseId !== state.activePhaseId);
   const enteringMission = isMission && currentScreen !== 'mission';
-  const enteringSplash = !isGame && currentScreen !== 'splash';
+  const enteringSplash = isSplash && currentScreen !== 'splash';
+  const enteringPage = isPage && currentScreen !== state.screen;
 
-  elements.splash.hidden = isGame;
+  elements.splash.hidden = !isSplash;
   elements.game.hidden = !isGame;
-  elements.splash.setAttribute('aria-hidden', String(isGame));
+  elements.pageScreen.hidden = !isPage;
+  elements.splash.setAttribute('aria-hidden', String(!isSplash));
   elements.game.setAttribute('aria-hidden', String(!isGame));
+  elements.pageScreen.setAttribute('aria-hidden', String(!isPage));
   elements.cityMain.hidden = !isCity;
   elements.phaseScreen.hidden = !isPhase;
   elements.phaseScreen.setAttribute('aria-hidden', String(!isPhase));
@@ -443,6 +1269,14 @@ function render() {
 
   for (const [phaseId, host] of Object.entries(elements.phaseHosts)) {
     host.hidden = !isPhase || state.activePhaseId !== phaseId;
+  }
+
+  if (isSplash) {
+    renderHomeScreen();
+  } else if (isPage) {
+    renderPageScreen();
+  } else if (isGame) {
+    renderHudForPlayer();
   }
 
   if (isMission) {
@@ -487,13 +1321,22 @@ function render() {
       requestAnimationFrame(() => activePhase.controller.focus());
     }
   } else if (isMission) {
-    missionController.refresh();
+    missionController?.refresh();
 
     if (enteringMission) {
       requestAnimationFrame(() => missionController.focus());
     }
-  } else if (enteringSplash) {
-    requestAnimationFrame(() => elements.startButton?.focus({ preventScroll: true }));
+  } else if (isSplash && enteringSplash) {
+    requestAnimationFrame(() => {
+      const target = elements.home.querySelector(
+        '#player-name, .home-menu__btn.is-primary, .profile-pick'
+      );
+      target?.focus({ preventScroll: true });
+    });
+  } else if (isPage && enteringPage) {
+    requestAnimationFrame(() =>
+      elements.pageHost.querySelector('.page-header .btn')?.focus({ preventScroll: true })
+    );
   }
 
   updateDocumentTitle();
@@ -507,7 +1350,7 @@ function updatePanel() {
   const selectedBuilding = getSelectedBuilding(state);
   const phaseActions = selectedBuilding
     ? phaseDefinitions
-        .filter((definition) => definition.buildingId === selectedBuilding.id)
+        .filter((definition) => definition.buildingIds.includes(selectedBuilding.id))
         .map((definition) => ({
           id: definition.data.id,
           label: `Fase ${definition.phaseNumber} · ${definition.data.title}`,
@@ -521,19 +1364,7 @@ function updatePanel() {
         }))
     : [];
 
-  const progress = buildGameProgress(
-    phaseDefinitions.map((definition) => ({
-      id: definition.data.id,
-      title: definition.data.title,
-      phaseNumber: definition.phaseNumber,
-      medalLabel: definition.medalLabel,
-      completed: definition.controller.getState().completed,
-      score: definition.controller.getState().score,
-      maxScore: Number.isFinite(definition.data.scoring?.max)
-        ? definition.data.scoring.max
-        : 100
-    }))
-  );
+  const progress = currentProgress();
 
   renderPanel(elements.panel, {
     city: cityData.city,
@@ -541,9 +1372,9 @@ function updatePanel() {
     onSelect: (buildingId) => navigate({ screen: 'city', buildingId }),
     onClose: () => navigate({ screen: 'city', buildingId: null }),
     onOpenMission: () => navigate({ screen: 'mission', missionId: missionData.id }),
-    onOpenHelp: () => openHelp({ glossary: glossaryData, tips: tipsData, context: getHelpContext() }),
+    onOpenHelp: () => openHelp({ glossary: glossaryData, tips: tipsData, context: 'general' }),
     onResetGame: confirmResetGame,
-    progress,
+    progress: activePlayer ? progress : null,
     phaseActions
   });
 
@@ -560,7 +1391,7 @@ function updatePanel() {
   }
 
   const previousGroup = findBuildingGroup(previousSelected);
-  (previousGroup || elements.startButton)?.focus();
+  (previousGroup || elements.panel.querySelector('.btn--help'))?.focus();
 }
 
 function getHelpContext() {
@@ -572,7 +1403,8 @@ function getHelpContext() {
     const contexts = {
       'centro-de-distribuicao': 'phase1',
       'rede-de-dependencias': 'phase2',
-      'cidade-organizada': 'phase3'
+      'cidade-organizada': 'phase3',
+      'gestao-de-funcionarios-e-pedidos': 'phase4'
     };
     return contexts[state.activePhaseId] || 'general';
   }
@@ -586,29 +1418,37 @@ function getHelpContext() {
 
 function confirmResetGame() {
   openConfirm({
-    title: 'Reiniciar todo o jogo?',
+    title: 'Reiniciar meu progresso?',
     message:
-      'Todo o progresso das fases, a pontuação acumulada, as medalhas e as evoluções da cidade serão apagados. Esta ação não pode ser desfeita.',
-    confirmLabel: 'Reiniciar tudo',
+      'O progresso das quatro fases deste jogador, a pontuação local, as medalhas e as evoluções da cidade serão apagados. O perfil e os resultados já confirmados no ranking não serão removidos.',
+    confirmLabel: 'Reiniciar progresso',
     cancelLabel: 'Cancelar',
-    onConfirm: resetWholeGame
+    onConfirm: resetPlayerProgress
   });
 }
 
-function resetWholeGame() {
+function resetPlayerProgress() {
   for (const definition of phaseDefinitions) {
     definition.controller.reset();
   }
 
   missionController?.reset?.();
-  clearAllProgress();
+
+  if (activePlayer) {
+    clearPlayerProgress(activePlayer.id);
+    savePendingMatches(activePlayer.id, []);
+  }
+
+  phaseAttempts.clear();
 
   phaseScores = Object.fromEntries(
     phaseDefinitions.map((definition) => [definition.data.id, 0])
   );
   state = setScore(state, 0);
   updateHudScore(elements.hud, 0);
-  panelBuildingId = undefined;
+  showIdentity = false;
+  rankingState = createEmptyRankingState();
+  refreshCityEvolution();
   navigate({ screen: 'splash', buildingId: null });
 }
 
@@ -637,6 +1477,12 @@ function handleGlobalKeydown(event) {
     return;
   }
 
+  if (['profile', 'character', 'knowledge', 'ranking', 'achievements', 'about', 'challenges', 'admin'].includes(state.screen)) {
+    event.preventDefault();
+    navigate({ screen: 'splash', buildingId: null });
+    return;
+  }
+
   if (state.screen === 'phase') {
     event.preventDefault();
     const definition = getPhaseDefinition(state.activePhaseId);
@@ -657,6 +1503,27 @@ function handleGlobalKeydown(event) {
 }
 
 function updateDocumentTitle() {
+  const pageTitles = {
+    profile: 'Meu Perfil',
+    ranking: 'Ranking',
+    achievements: 'Conquistas',
+    about: 'Sobre o jogo',
+    challenges: 'Desafios',
+    knowledge: 'Árvore de Conhecimento',
+    character: 'Meu personagem',
+    admin: 'Administração'
+  };
+
+  if (state.screen === 'splash') {
+    document.title = 'Cafegeek — Jornada do Conhecimento';
+    return;
+  }
+
+  if (pageTitles[state.screen]) {
+    document.title = `${pageTitles[state.screen]} - Cafegeek`;
+    return;
+  }
+
   if (state.screen === 'mission') {
     document.title = `${missionData.title} — NORMALIZA!`;
     return;
@@ -671,7 +1538,11 @@ function updateDocumentTitle() {
   }
 
   const building = getSelectedBuilding(state);
-  document.title = building ? `${building.name} — NORMALIZA!` : 'NORMALIZA! — Cidade dos dados';
+  document.title = building
+    ? `${building.name} — NORMALIZA!`
+    : activePlayer
+      ? `${activePlayer.name} — NORMALIZA!`
+      : 'NORMALIZA! — Cidade dos dados';
 }
 
 function showFatalError(error) {
@@ -682,7 +1553,7 @@ function showFatalError(error) {
 
   const message = document.createElement('p');
   message.append(
-    'Verifique se os arquivos data/city.json, data/phases/fase-1.json, data/phases/fase-2.json, data/phases/fase-3.json, data/missions/administracao.json, data/glossary.json e data/tips.json estão disponíveis e se o servidor local foi iniciado. '
+    'Verifique se os arquivos data/city.json, data/phases/fase-1.json, data/phases/fase-2.json, data/phases/fase-3.json, data/phases/fase-4.json, data/missions/administracao.json, data/glossary.json e data/tips.json estão disponíveis e se o servidor local foi iniciado. '
   );
 
   const detail = document.createElement('code');
@@ -695,3 +1566,7 @@ function showFatalError(error) {
 
   elements.app.replaceChildren(container);
 }
+
+window.addEventListener('beforeunload', () => {
+  syncCleanup?.();
+});

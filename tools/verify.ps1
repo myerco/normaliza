@@ -60,6 +60,7 @@ function Invoke-HeadlessBrowser {
       -NoNewWindow `
       -RedirectStandardOutput $OutputPath `
       -RedirectStandardError $errorLog | Out-Null
+    Start-Sleep -Milliseconds 700
   } finally {
     Remove-Item -LiteralPath $profile -Recurse -Force -ErrorAction SilentlyContinue
     Remove-Item -LiteralPath $errorLog -Force -ErrorAction SilentlyContinue
@@ -168,6 +169,66 @@ try {
     Write-Output "DOM das interacoes da Fase 3 salvo em: $interactionsPhase3DomPath"
   }
 
+  $phase4InteractionsDomPath = Join-Path $env:TEMP 'normaliza-interactions-phase4-dom.html'
+  Invoke-HeadlessBrowser `
+    -Arguments @(
+      '--window-size=1440,980',
+      '--virtual-time-budget=60000',
+      '--dump-dom',
+      "$baseUrl/tests/interactions-phase4.html"
+    ) `
+    -OutputPath $phase4InteractionsDomPath
+
+  $phase4InteractionsDom = Get-Content -LiteralPath $phase4InteractionsDomPath -Raw
+
+  if ($phase4InteractionsDom -match '<body[^>]*data-interaction-status="pass"') {
+    Write-Output 'Interacoes Fase 4: PASS'
+  } else {
+    $failed = $true
+    Write-Output 'Interacoes Fase 4: FAIL'
+    Write-Output "DOM das interacoes da Fase 4 salvo em: $phase4InteractionsDomPath"
+  }
+
+  $playersInteractionsDomPath = Join-Path $env:TEMP 'normaliza-interactions-players-dom.html'
+  Invoke-HeadlessBrowser `
+    -Arguments @(
+      '--window-size=1440,980',
+      '--virtual-time-budget=60000',
+      '--dump-dom',
+      "$baseUrl/tests/interactions-players.html"
+    ) `
+    -OutputPath $playersInteractionsDomPath
+
+  $playersInteractionsDom = Get-Content -LiteralPath $playersInteractionsDomPath -Raw
+
+  if ($playersInteractionsDom -match '<body[^>]*data-interaction-status="pass"') {
+    Write-Output 'Interacoes Jogadores/Ranking: PASS'
+  } else {
+    $failed = $true
+    Write-Output 'Interacoes Jogadores/Ranking: FAIL'
+    Write-Output "DOM das interacoes de jogadores salvo em: $playersInteractionsDomPath"
+  }
+
+  $adminInteractionsDomPath = Join-Path $env:TEMP 'normaliza-admin-dom.html'
+  Invoke-HeadlessBrowser `
+    -Arguments @(
+      '--window-size=1440,1200',
+      '--virtual-time-budget=60000',
+      '--dump-dom',
+      "$baseUrl/tests/interactions-admin.html"
+    ) `
+    -OutputPath $adminInteractionsDomPath
+
+  $adminInteractionsDom = Get-Content -LiteralPath $adminInteractionsDomPath -Raw
+
+  if ($adminInteractionsDom -match '<body[^>]*data-interaction-status="pass"') {
+    Write-Output 'Interacoes Administracao: PASS'
+  } else {
+    $failed = $true
+    Write-Output 'Interacoes Administracao: FAIL'
+    Write-Output "DOM das interacoes administrativas salvo em: $adminInteractionsDomPath"
+  }
+
   $missionInteractionsDomPath = Join-Path $env:TEMP 'normaliza-mission-dom.html'
   Invoke-HeadlessBrowser `
     -Arguments @(
@@ -209,18 +270,35 @@ try {
   }
 
   if (-not $SkipScreenshots) {
+    $demo = "$baseUrl/tools/demo-seed.html"
     $shots = @(
-      @{ Name = 'normaliza-inicio.png'; Url = "$baseUrl/"; Size = '1440,900' },
-      @{ Name = 'normaliza-cidade.png'; Url = "$baseUrl/#/cidade"; Size = '1440,900' },
-      @{ Name = 'normaliza-pedido.png'; Url = "$baseUrl/#/cidade/pedido"; Size = '1440,900' },
-      @{ Name = 'normaliza-fase1.png'; Url = "$baseUrl/#/fase/centro-de-distribuicao"; Size = '1440,1100' },
-      @{ Name = 'normaliza-fase2.png'; Url = "$baseUrl/#/fase/rede-de-dependencias"; Size = '1440,1200' },
-      @{ Name = 'normaliza-fase3.png'; Url = "$baseUrl/#/fase/cidade-organizada"; Size = '1440,1200' },
-      @{ Name = 'normaliza-missao.png'; Url = "$baseUrl/#/missao/administracao"; Size = '1440,1200' },
-      @{ Name = 'normaliza-mobile.png'; Url = "$baseUrl/tools/mobile-preview.html"; Size = '500,960' },
+      @{ Name = 'normaliza-inicio.png'; Url = "$baseUrl/"; Size = '1440,1000' },
+      @{ Name = 'normaliza-home.png'; Url = "${demo}?rota=home&ranking=1"; Size = '1440,1000' },
+      @{ Name = 'normaliza-home-evoluida.png'; Url = "${demo}?rota=home&completo=1"; Size = '1440,1000' },
+      @{ Name = 'normaliza-desafios.png'; Url = "${demo}?rota=desafios"; Size = '1440,1000' },
+      @{ Name = 'normaliza-arvore.png'; Url = "${demo}?rota=arvore"; Size = '1440,1000' },
+      @{ Name = 'normaliza-personagem.png'; Url = "${demo}?rota=personagem"; Size = '1440,1000' },
+      @{ Name = 'normaliza-admin.png'; Url = "${demo}?rota=admin"; Size = '1440,1200' },
+      @{ Name = 'normaliza-cidade.png'; Url = "${demo}?rota=cidade"; Size = '1440,1000' },
+      @{ Name = 'normaliza-cidade-evoluida.png'; Url = "${demo}?rota=cidade&completo=1"; Size = '1440,1000' },
+      @{ Name = 'normaliza-pedido.png'; Url = "${demo}?rota=cidade/pedido"; Size = '1440,1000' },
+      @{ Name = 'normaliza-fase1.png'; Url = "${demo}?rota=fase/centro-de-distribuicao"; Size = '1440,1100' },
+      @{ Name = 'normaliza-fase2.png'; Url = "${demo}?rota=fase/rede-de-dependencias"; Size = '1440,1200' },
+      @{ Name = 'normaliza-fase3.png'; Url = "${demo}?rota=fase/cidade-organizada"; Size = '1440,1200' },
+      @{ Name = 'normaliza-fase4.png'; Url = "${demo}?rota=fase/gestao-de-funcionarios-e-pedidos"; Size = '1440,1300' },
+      @{ Name = 'normaliza-missao.png'; Url = "${demo}?rota=missao/administracao"; Size = '1440,1200' },
+      @{ Name = 'normaliza-perfil.png'; Url = "${demo}?rota=perfil&ranking=1"; Size = '1440,1200' },
+      @{ Name = 'normaliza-ranking.png'; Url = "${demo}?rota=ranking&ranking=1"; Size = '1440,1200' },
+      @{ Name = 'normaliza-conquistas.png'; Url = "${demo}?rota=conquistas"; Size = '1440,1100' },
+      @{ Name = 'normaliza-sobre.png'; Url = "${demo}?rota=sobre"; Size = '1440,1100' },
+      @{ Name = 'normaliza-mobile.png'; Url = "$baseUrl/tools/mobile-preview.html?rota=home"; Size = '500,960' },
+      @{ Name = 'normaliza-cidade-mobile.png'; Url = "$baseUrl/tools/mobile-preview.html"; Size = '500,960' },
       @{ Name = 'normaliza-fase1-mobile.png'; Url = "$baseUrl/tools/mobile-preview.html?rota=fase"; Size = '500,960' },
       @{ Name = 'normaliza-fase2-mobile.png'; Url = "$baseUrl/tools/mobile-preview.html?rota=fase2"; Size = '500,960' },
       @{ Name = 'normaliza-fase3-mobile.png'; Url = "$baseUrl/tools/mobile-preview.html?rota=fase3"; Size = '500,960' },
+      @{ Name = 'normaliza-fase4-mobile.png'; Url = "$baseUrl/tools/mobile-preview.html?rota=fase4"; Size = '500,960' },
+      @{ Name = 'normaliza-perfil-mobile.png'; Url = "$baseUrl/tools/mobile-preview.html?rota=perfil"; Size = '500,960' },
+      @{ Name = 'normaliza-ranking-mobile.png'; Url = "$baseUrl/tools/mobile-preview.html?rota=ranking"; Size = '500,960' },
       @{ Name = 'normaliza-missao-mobile.png'; Url = "$baseUrl/tools/mobile-preview.html?rota=missao"; Size = '500,960' }
     )
 
@@ -232,11 +310,26 @@ try {
         -Arguments @(
           '--hide-scrollbars',
           "--window-size=$($shot.Size)",
-          '--virtual-time-budget=5000',
+          '--virtual-time-budget=12000',
+          '--run-all-compositor-stages-before-draw',
           "--screenshot=$shotPath",
           $shot.Url
         ) `
         -OutputPath $shotLog
+
+      if (-not (Test-Path -LiteralPath $shotPath)) {
+        Start-Sleep -Milliseconds 900
+
+        Invoke-HeadlessBrowser `
+          -Arguments @(
+            '--hide-scrollbars',
+            "--window-size=$($shot.Size)",
+            '--virtual-time-budget=12000',
+            "--screenshot=$shotPath",
+            $shot.Url
+          ) `
+          -OutputPath $shotLog
+      }
 
       if (Test-Path -LiteralPath $shotPath) {
         Write-Output "Screenshot: $shotPath"

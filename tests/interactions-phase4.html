@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Testes de interação da Fase 4 — NORMALIZA!</title>
+  <style>
+    html,
+    body {
+      margin: 0;
+      background: #07111d;
+      color: #f7f1e3;
+      font-family: "Segoe UI", system-ui, sans-serif;
+    }
+
+    main {
+      padding: 1rem;
+    }
+
+    iframe {
+      width: 1200px;
+      max-width: 100%;
+      height: 900px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      background: #0b1622;
+    }
+
+    pre {
+      padding: 1rem;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      white-space: pre-wrap;
+    }
+
+    body[data-interaction-status="pass"] #out {
+      border-left: 4px solid #2a9d8f;
+    }
+
+    body[data-interaction-status="fail"] #out {
+      border-left: 4px solid #e76f51;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Testes de interação da Fase 4</h1>
+    <p id="summary">Executando…</p>
+    <iframe id="app-frame" title="Aplicação NORMALIZA! para testes da Fase 4"></iframe>
+    <pre id="out"></pre>
+  </main>
+
+  <script src="./browser-fixture.js"></script>
+  <script>
+    const frame = document.getElementById('app-frame');
+    const summary = document.getElementById('summary');
+    const out = document.getElementById('out');
+    const checks = [];
+
+    frame.addEventListener('load', () => {
+      run().catch((error) => {
+        checks.push({ name: 'execução geral', ok: false, detail: String(error && error.stack || error) });
+        finish(error);
+      });
+    });
+
+    NormalizaTestFixture.seedActivePlayer({ name: 'Jogador Fase 4', avatarId: 'cientista' });
+    frame.src = '../index.html?test=1#/fase/gestao-de-funcionarios-e-pedidos';
+
+    async function run() {
+      const win = frame.contentWindow;
+      let doc = frame.contentDocument;
+
+      await waitFor(
+        () => doc.documentElement.dataset.appReady === 'true' && !doc.getElementById('phase-screen').hidden,
+        'aplicação inicializada'
+      );
+      await waitFor(() => doc.querySelector('#phase-host-fase-4 .phase4-shell'), 'fase 4 aberta');
+      const host = () => doc.querySelector('#phase-host-fase-4');
+
+      check('fase 4 tem três terrenos', host().querySelectorAll('.p3-lot').length === 3);
+      check('fase 4 tem quatro pedidos de entrada', host().querySelectorAll('.fd-input-table tbody tr').length === 4);
+      check('fase 4 mostra cinco dependências', host().querySelectorAll('.p3-fd-choice').length === 5);
+      check('fase 4 começa sem pontuação', host().querySelector('.phase-score strong').textContent.trim() === '0 / 100');
+
+      click(doc, '[data-action="select-key-dependency"][data-dependency-id="fd-funcionario-departamento"]');
+      await waitFor(() => host().querySelector('.p3-fd-choice.is-selected'), 'dependência-chave selecionada');
+      check('dependência-chave é marcada', host().querySelector('.p3-fd-choice.is-selected').textContent.includes('Funcionário'));
+
+      for (const tableId of ['pedido', 'funcionario', 'departamento']) {
+        click(doc, `[data-action="build-table"][data-table="${tableId}"]`);
+      }
+      await waitFor(() => host().querySelectorAll('.p3-lot.is-built').length === 3, 'três edifícios construídos');
+      check('três edifícios foram construídos', true);
+
+      const memberships = [
+        ['pedido', 'pedido'],
+        ['pedido', 'cliente'],
+        ['pedido', 'funcionario'],
+        ['funcionario', 'funcionario'],
+        ['funcionario', 'nome_funcionario'],
+        ['funcionario', 'departamento'],
+        ['departamento', 'departamento'],
+        ['departamento', 'localizacao']
+      ];
+
+      for (const [tableId, attributeId] of memberships) {
+        click(
+          doc,
+          `[data-action="toggle-membership"][data-table="${tableId}"][data-attribute="${attributeId}"]`
+        );
+      }
+      await waitFor(
+        () => host().querySelectorAll('.p3-table__attrs .p3-attr').length >= 8,
+        'atributos distribuídos'
+      );
+      check('oito atribuições foram feitas', host().querySelectorAll('.p3-table__attrs .p3-attr').length === 8);
+
+      for (const [tableId, attributeId] of [
+        ['pedido', 'pedido'],
+        ['funcionario', 'funcionario'],
+        ['departamento', 'departamento']
+      ]) {
+        click(
+          doc,
+          `[data-action="toggle-primary-key"][data-table="${tableId}"][data-attribute="${attributeId}"]`
+        );
+      }
+      for (const [tableId, attributeId] of [
+        ['pedido', 'funcionario'],
+        ['funcionario', 'departamento']
+      ]) {
+        click(
+          doc,
+          `[data-action="toggle-foreign-key"][data-table="${tableId}"][data-attribute="${attributeId}"]`
+        );
+      }
+      await waitFor(() => host().querySelectorAll('.pk-toggle.is-active').length === 3, 'PKs marcadas');
+      check('três PKs e duas FKs foram marcadas', host().querySelectorAll('.fk-toggle.is-active').length === 2);
+
+      await addRelationship(doc, win, 'pedido', 'funcionario', 'funcionario', 'funcionario');
+      await addRelationship(doc, win, 'funcionario', 'departamento', 'departamento', 'departamento');
+      await waitFor(() => host().querySelectorAll('.p3-relationship').length === 2, 'duas estradas criadas');
+      check('duas estradas foram criadas', true);
+
+      click(doc, '[data-action="validate"]');
+      await waitFor(() => host().querySelector('.phase-complete'), 'fase 4 concluída');
+      check('fase 4 conclui com 100 pontos', host().querySelector('.phase-complete__score strong').textContent.trim() === '100 / 100');
+      check('HUD recebe os 100 pontos', doc.querySelector('.hud__score-value').textContent === '100 pts');
+      check('explicação de anomalias é exibida', host().querySelectorAll('.p4-anomaly').length === 3);
+
+      const progress = NormalizaTestFixture.loadProgress();
+      check('snapshot da fase 4 foi persistido', progress['gestao-de-funcionarios-e-pedidos']?.completed === true);
+
+      click(doc, '[data-action="complete-exit"]');
+      await waitFor(
+        () => !doc.getElementById('city-main').hidden && doc.getElementById('phase-screen').hidden,
+        'retorno à cidade'
+      );
+      doc = frame.contentDocument;
+      check('DEPARTAMENTO é adicionado à cidade', Boolean(doc.querySelector('.building[data-building-id="departamento"]')));
+      check('PEDIDO fica marcado como 3FN', doc.querySelector('.building[data-building-id="pedido"]').classList.contains('is-normalized'));
+      check('FUNCIONÁRIO fica marcado como 3FN', doc.querySelector('.building[data-building-id="funcionario"]').classList.contains('is-normalized'));
+      check('duas estradas da fase 4 são visíveis', doc.querySelectorAll('.city-dependency-link').length === 2);
+
+      finish();
+    }
+
+    async function addRelationship(doc, win, fromTable, fromAttribute, toTable, toAttribute) {
+      setBuilder(doc, win, 'source-table', fromTable);
+      setBuilder(doc, win, 'source-attribute', fromAttribute);
+      setBuilder(doc, win, 'target-table', toTable);
+      setBuilder(doc, win, 'target-attribute', toAttribute);
+      await waitFor(
+        () => !doc.querySelector('#phase-host-fase-4 [data-action="add-relationship"]').disabled,
+        'construtor de relacionamento pronto'
+      );
+      click(doc, '[data-action="add-relationship"]');
+    }
+
+    function setBuilder(doc, win, name, value) {
+      const select = doc.querySelector(`#phase-host-fase-4 [data-builder="${name}"]`);
+      select.value = value;
+      select.dispatchEvent(new win.Event('change', { bubbles: true }));
+    }
+
+    function click(doc, selector) {
+      const element = doc.querySelector(`#phase-host-fase-4 ${selector}`) || doc.querySelector(selector);
+      if (!element) {
+        throw new Error(`Elemento não encontrado: ${selector}`);
+      }
+      element.click();
+    }
+
+    function check(name, condition) {
+      if (!condition) {
+        throw new Error(`Falhou: ${name}`);
+      }
+
+      checks.push({ name, ok: true });
+    }
+
+    function waitFor(predicate, description, timeout = 9000) {
+      return new Promise((resolve, reject) => {
+        const startedAt = Date.now();
+
+        const tick = () => {
+          try {
+            if (predicate()) {
+              resolve();
+              return;
+            }
+          } catch (error) {
+            reject(error);
+            return;
+          }
+
+          if (Date.now() - startedAt > timeout) {
+            reject(new Error(`Timeout aguardando: ${description}`));
+            return;
+          }
+
+          setTimeout(tick, 50);
+        };
+
+        tick();
+      });
+    }
+
+    function finish(error) {
+      const failed = Boolean(error) || checks.some((checkItem) => !checkItem.ok);
+      const passed = checks.filter((checkItem) => checkItem.ok).length;
+
+      document.body.dataset.interactionStatus = failed ? 'fail' : 'pass';
+      summary.textContent = failed
+        ? `Falha na Fase 4 (${passed} verificações passaram).`
+        : `Todos os testes da Fase 4 passaram (${passed} verificações).`;
+      out.textContent = JSON.stringify({ failed, checks, error: error ? String(error) : null }, null, 2);
+      document.title = failed ? 'FAIL — Fase 4 NORMALIZA!' : 'PASS — Fase 4 NORMALIZA!';
+    }
+  </script>
+</body>
+</html>

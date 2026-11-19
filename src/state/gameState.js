@@ -1,4 +1,4 @@
-export const PHASE = Object.freeze({
+﻿export const PHASE = Object.freeze({
   id: 'fase-1',
   label: 'Fase 1 — Centro de Distribuição'
 });
@@ -41,6 +41,20 @@ export function startPhase(state, phaseId) {
     screen: 'phase',
     selectedBuildingId: null,
     activePhaseId: phaseId,
+    activeMissionId: null
+  };
+}
+
+export function goToPage(state, screen) {
+  if (!['profile', 'character', 'ranking', 'achievements', 'about', 'challenges', 'admin', 'knowledge'].includes(screen)) {
+    return state;
+  }
+
+  return {
+    ...state,
+    screen,
+    selectedBuildingId: null,
+    activePhaseId: null,
     activeMissionId: null
   };
 }
@@ -103,6 +117,10 @@ export function getHud(state) {
 export function applyRoute(state, route) {
   if (!route) {
     return goToMenu(state);
+  }
+
+  if (['profile', 'character', 'ranking', 'achievements', 'about', 'challenges', 'admin', 'knowledge'].includes(route.screen)) {
+    return goToPage(state, route.screen);
   }
 
   if (route.screen === 'mission' && route.missionId) {

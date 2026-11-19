@@ -1,0 +1,195 @@
+{
+  "id": "gestao-de-funcionarios-e-pedidos",
+  "phaseNumber": 4,
+  "title": "Gestão de Funcionários e Pedidos",
+  "normalForm": "3FN",
+  "sourceTable": "PEDIDO",
+  "objective": "Identificar a cadeia de dependências entre pedidos, funcionários e departamentos, construir as três tabelas e validar a decomposição.",
+  "summary": "PEDIDO determina o funcionário; o funcionário determina seu nome e departamento; o departamento determina sua localização.",
+  "attributes": [
+    { "id": "pedido", "label": "Pedido", "role": "key" },
+    { "id": "cliente", "label": "Cliente", "role": "dependent" },
+    { "id": "funcionario", "label": "Funcionário", "role": "determinant" },
+    { "id": "nome_funcionario", "label": "Nome Funcionário", "role": "dependent" },
+    { "id": "departamento", "label": "Departamento", "role": "determinant" },
+    { "id": "localizacao", "label": "Localização", "role": "transitive" }
+  ],
+  "candidateKey": ["pedido"],
+  "functionalDependencies": [
+    {
+      "id": "fd-pedido-cliente",
+      "determinant": ["pedido"],
+      "dependent": "cliente",
+      "type": "direct",
+      "label": "Pedido → Cliente"
+    },
+    {
+      "id": "fd-pedido-funcionario",
+      "determinant": ["pedido"],
+      "dependent": "funcionario",
+      "type": "direct",
+      "label": "Pedido → Funcionário"
+    },
+    {
+      "id": "fd-funcionario-nome",
+      "determinant": ["funcionario"],
+      "dependent": "nome_funcionario",
+      "type": "direct",
+      "label": "Funcionário → Nome Funcionário"
+    },
+    {
+      "id": "fd-funcionario-departamento",
+      "determinant": ["funcionario"],
+      "dependent": "departamento",
+      "type": "transitive",
+      "label": "Funcionário → Departamento"
+    },
+    {
+      "id": "fd-departamento-localizacao",
+      "determinant": ["departamento"],
+      "dependent": "localizacao",
+      "type": "transitive",
+      "label": "Departamento → Localização"
+    }
+  ],
+  "keyDependencyId": "fd-funcionario-departamento",
+  "rows": [
+    { "pedido": "001", "cliente": "João", "funcionario": "101", "nome_funcionario": "Carlos", "departamento": "Vendas", "localizacao": "Porto Velho" },
+    { "pedido": "002", "cliente": "Maria", "funcionario": "102", "nome_funcionario": "Ana", "departamento": "Financeiro", "localizacao": "Ji-Paraná" },
+    { "pedido": "003", "cliente": "Pedro", "funcionario": "101", "nome_funcionario": "Carlos", "departamento": "Vendas", "localizacao": "Porto Velho" },
+    { "pedido": "004", "cliente": "José", "funcionario": "103", "nome_funcionario": "Paulo", "departamento": "Vendas", "localizacao": "Porto Velho" }
+  ],
+  "targetTables": [
+    {
+      "id": "pedido",
+      "name": "PEDIDO",
+      "attributes": ["pedido", "cliente", "funcionario"],
+      "primaryKey": ["pedido"],
+      "foreignKeys": [
+        {
+          "attribute": "funcionario",
+          "references": {
+            "table": "funcionario",
+            "attribute": "funcionario"
+          }
+        }
+      ]
+    },
+    {
+      "id": "funcionario",
+      "name": "FUNCIONÁRIO",
+      "attributes": ["funcionario", "nome_funcionario", "departamento"],
+      "primaryKey": ["funcionario"],
+      "foreignKeys": [
+        {
+          "attribute": "departamento",
+          "references": {
+            "table": "departamento",
+            "attribute": "departamento"
+          }
+        }
+      ]
+    },
+    {
+      "id": "departamento",
+      "name": "DEPARTAMENTO",
+      "attributes": ["departamento", "localizacao"],
+      "primaryKey": ["departamento"],
+      "foreignKeys": []
+    }
+  ],
+  "relationships": [
+    {
+      "id": "pedido.funcionario->funcionario.funcionario",
+      "fromTable": "pedido",
+      "fromAttribute": "funcionario",
+      "toTable": "funcionario",
+      "toAttribute": "funcionario",
+      "label": "N:1"
+    },
+    {
+      "id": "funcionario.departamento->departamento.departamento",
+      "fromTable": "funcionario",
+      "fromAttribute": "departamento",
+      "toTable": "departamento",
+      "toAttribute": "departamento",
+      "label": "N:1"
+    }
+  ],
+  "concepts": {
+    "transitive": "Pedido determina Funcionário e Funcionário determina Departamento. Como Funcionário não é superchave de PEDIDO, Departamento depende transitivamente de Pedido.",
+    "thirdNormalForm": "3FN: a relação está em 2FN e, para toda DF não trivial X → A, X é superchave ou A é atributo primo.",
+    "decomposition": "A decomposição separa o funcionário e seu departamento em FUNCIONÁRIO e DEPARTAMENTO, mantendo as FKs que preservam os relacionamentos."
+  },
+  "rules": [
+    "A chave primária da tabela original é Pedido.",
+    "Pedido → Cliente e Pedido → Funcionário são dependências diretas.",
+    "Funcionário → Nome Funcionário e Funcionário → Departamento descrevem o funcionário.",
+    "Departamento → Localização descreve o departamento.",
+    "A cadeia Pedido → Funcionário → Departamento → Localização cria dependências transitivas.",
+    "A decomposição deve preservar atributos, dependências e a junção."
+  ],
+  "hints": [
+    "O nome do funcionário e o departamento não dependem diretamente de Pedido; eles descrevem o funcionário.",
+    "O departamento determina sua localização. Localização não deve ficar em FUNCIONÁRIO.",
+    "PEDIDO fica com Pedido, Cliente e Funcionário. FUNCIONÁRIO fica com Funcionário, Nome Funcionário e Departamento. DEPARTAMENTO fica com Departamento e Localização.",
+    "Crie as FKs PEDIDO.Funcionário → FUNCIONÁRIO.Funcionário e FUNCIONÁRIO.Departamento → DEPARTAMENTO.Departamento."
+  ],
+  "scoring": {
+    "pointsPerKeyDependency": 20,
+    "pointsPerTable": 10,
+    "pointsPerMembership": 5,
+    "pointsPerPrimaryKey": 5,
+    "pointsPerForeignKey": 5,
+    "pointsPerRelationship": 10,
+    "completionBonus": 10,
+    "wrongValidationPenalty": 10,
+    "hintPenalty": 5,
+    "max": 100
+  },
+  "completion": {
+    "title": "Três entidades, uma cidade mais organizada.",
+    "explanation": "A tabela PEDIDO armazenava informações que descreviam outras entidades. O nome e o departamento pertencem ao funcionário, enquanto a localização pertence ao departamento. Ao armazenar essas informações diretamente na tabela PEDIDO, os mesmos dados poderiam ser repetidos em diversos pedidos. A decomposição permite que cada entidade mantenha suas próprias informações, reduzindo redundâncias e evitando anomalias de atualização.",
+    "anomalies": [
+      {
+        "type": "Atualização",
+        "title": "Mudança de departamento",
+        "text": "Se Carlos mudar de departamento, todas as linhas de PEDIDO que falam dele precisariam ser atualizadas. Em FUNCIONÁRIO, basta uma linha."
+      },
+      {
+        "type": "Inserção",
+        "title": "Funcionário sem pedido",
+        "text": "Na tabela original, não há como cadastrar um funcionário que ainda não atendeu nenhum pedido. FUNCIONÁRIO permite esse cadastro independentemente de PEDIDO."
+      },
+      {
+        "type": "Exclusão",
+        "title": "Perda ao excluir um pedido",
+        "text": "Excluir o último pedido de um funcionário poderia apagar suas informações. Com FUNCIONÁRIO separado, os dados do funcionário permanecem."
+      }
+    ]
+  },
+  "cityEvolution": {
+    "buildings": [
+      {
+        "id": "departamento",
+        "name": "DEPARTAMENTO",
+        "description": "Departamentos e suas localizações após a decomposição da 3FN.",
+        "recordCount": 2,
+        "attributes": ["departamento", "localizacao"],
+        "position": { "x": 120, "y": 300 },
+        "size": { "width": 100, "depth": 80, "height": 90 },
+        "color": "#f15bb5",
+        "badgeLabel": "3FN"
+      }
+    ],
+    "links": [
+      { "from": "pedido", "to": "funcionario", "label": "N:1" },
+      { "from": "funcionario", "to": "departamento", "label": "N:1" }
+    ],
+    "normalizedBuildings": [
+      { "id": "pedido", "badgeLabel": "3FN" },
+      { "id": "funcionario", "badgeLabel": "3FN" },
+      { "id": "departamento", "badgeLabel": "3FN" }
+    ]
+  }
+}

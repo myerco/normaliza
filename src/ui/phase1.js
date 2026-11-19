@@ -22,6 +22,8 @@ export function createPhase1({
   snapshot,
   onScoreChange,
   onStateChange,
+  onHint,
+  onValidation,
   onComplete,
   onReset,
   onExit
@@ -153,18 +155,29 @@ export function createPhase1({
         const wasCompleted = state.completed;
         const nextState = applyValidation(state, data, result);
 
-        if (!wasCompleted && nextState.completed) {
+        const completed = !wasCompleted && nextState.completed;
+        if (completed) {
           justCompleted = true;
-          onComplete?.(nextState);
         }
 
         commit(nextState);
+        onValidation?.();
+
+        if (completed) {
+          onComplete?.(nextState);
+        }
         break;
       }
 
-      case 'hint':
+      case 'hint': {
+        const beforeHint = state.hintsUsed;
         commit(useHint(state, data));
+
+        if (state.hintsUsed > beforeHint) {
+          onHint?.();
+        }
         break;
+      }
 
       case 'complete-exit':
         onExit?.();

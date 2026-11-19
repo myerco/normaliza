@@ -50,6 +50,7 @@
     <pre id="out"></pre>
   </main>
 
+  <script src="./browser-fixture.js"></script>
   <script>
     const frame = document.getElementById('app-frame');
     const summary = document.getElementById('summary');
@@ -63,26 +64,44 @@
       });
     });
 
-    frame.src = '../index.html';
+    NormalizaTestFixture.seedActivePlayer({ name: 'Jogador Teste', avatarId: 'analista' });
+    frame.src = '../index.html?test=1#/';
 
     async function run() {
       const win = frame.contentWindow;
       const doc = frame.contentDocument;
 
       await waitFor(
-        () => doc.documentElement.dataset.appReady === 'true' && doc.getElementById('btn-start'),
+        () => doc.documentElement.dataset.appReady === 'true' && doc.querySelector('.home-menu'),
         'aplicação inicializada'
       );
-      check('tela inicial exibe o título', doc.querySelector('.splash__title').textContent.includes('NORMALIZA'));
-      check('tela inicial tem menu', Boolean(doc.getElementById('btn-start')) && Boolean(doc.getElementById('btn-how')));
+      check('tela inicial exibe a marca Cafegeek', doc.querySelector('.platform-logo')?.getAttribute('src').includes('cafegeek-logo'));
+      check('tela inicial exibe a jornada', doc.querySelector('.cafe-brand__title').textContent.includes('Jornada do Conhecimento'));
+      check('tela inicial apresenta a Quest 01', doc.querySelector('.quest-spotlight').textContent.includes('NORMALIZA'));
+      check('tela inicial mostra o jogador', doc.querySelector('.home-player__identity').textContent.includes('Jogador Teste'));
+      check('tela inicial tem campanhas futuras', doc.querySelectorAll('.future-card').length === 3);
+      check('tela inicial tem menu completo', ['jornada', 'Meu Perfil', 'Ranking', 'Conquistas', 'Glossário', 'Sobre o jogo', 'Consultar desafios'].every((label) => doc.querySelector('.home-menu').textContent.includes(label)));
 
-      doc.getElementById('btn-start').click();
+      const challengesButton = [...doc.querySelectorAll('.home-menu__btn')].find((button) =>
+        button.textContent.includes('Consultar desafios')
+      );
+      challengesButton.click();
+      await waitFor(() => win.location.hash === '#/desafios' && doc.querySelector('.challenges-page'), 'página de desafios');
+      check('desafios apresentam a Quest 01', doc.querySelector('.challenge-card[data-quest-id="normaliza"]').textContent.includes('NORMALIZA'));
+      check('desafios mostram quests futuras bloqueadas', doc.querySelectorAll('.challenge-card.is-locked').length === 3);
+      doc.querySelector('.page-header .btn').click();
+      await waitFor(() => !doc.getElementById('splash-screen').hidden, 'retorno à jornada');
+
+      doc.querySelector('.home-menu__btn.is-primary').click();
       await waitFor(() => !doc.getElementById('game-screen').hidden && doc.querySelectorAll('.building').length === 4, 'cidade construída');
       check('rota da cidade ativa', win.location.hash === '#/cidade');
       check('HUD mostra a cidade', doc.querySelector('.hud__phase-name').textContent === 'Cidade dos dados');
       check('HUD mostra pontuação zero', doc.querySelector('.hud__score-value').textContent === '0 pts');
       check('cidade tem quatro edifícios', doc.querySelectorAll('.building').length === 4);
       check('cidade tem duas ruas', doc.querySelectorAll('.road__casing').length === 2);
+      check('cidade tem céu, terreno e malha viária', Boolean(doc.querySelector('.city-sky') && doc.querySelector('.city-terrain') && doc.querySelector('.city-roads-layer')));
+      check('cidade tem elementos urbanos', doc.querySelectorAll('.city-prop').length >= 10);
+      check('edifícios têm rótulos e pinos', doc.querySelectorAll('.building__label-pin').length === 4);
 
       await waitFor(
         () => doc.getElementById('city-svg').classList.contains('is-built'),
@@ -119,14 +138,23 @@
       await waitFor(() => !doc.getElementById('splash-screen').hidden, 'retorno ao menu');
       check('menu retorna à tela inicial', win.location.hash === '#/');
 
-      doc.getElementById('btn-how').click();
+      const aboutButton = [...doc.querySelectorAll('.home-menu__btn')].find((button) =>
+        button.textContent.includes('Sobre o jogo')
+      );
+      aboutButton.click();
+      await waitFor(
+        () => !doc.getElementById('page-screen').hidden && doc.querySelector('.about-hero'),
+        'página sobre o jogo'
+      );
+      check('menu abre Sobre o jogo', win.location.hash === '#/sobre');
+      doc.querySelector('.about-hero .btn').click();
       await waitFor(() => doc.querySelector('#instructions-root .modal__dialog'), 'modal de instruções');
       check('modal de instruções abre', doc.querySelector('#instructions-root .modal__title').textContent === 'Como jogar');
       doc.querySelector('#instructions-root .modal__actions .btn').click();
       await waitFor(() => !doc.querySelector('#instructions-root .modal__dialog'), 'modal de instruções fecha');
-      check('modal de instruções fecha', true);
-
-      doc.getElementById('btn-start').click();
+      doc.querySelector('.page-header .btn').click();
+      await waitFor(() => !doc.getElementById('splash-screen').hidden, 'retorno ao início');
+      doc.querySelector('.home-menu__btn.is-primary').click();
       await waitFor(() => !doc.getElementById('game-screen').hidden, 'retorno à cidade após o menu');
       clickBuilding(doc, win, 'pedido');
       await waitFor(() => doc.querySelector('.panel__title')?.textContent === 'PEDIDO', 'painel do PEDIDO para a fase');
@@ -196,7 +224,7 @@
         doc.querySelector('.building[data-building-id="pedido"]').classList.contains('is-normalized')
       );
 
-      const saved = JSON.parse(win.localStorage.getItem('normaliza:v1:progress') || '{}');
+      const saved = NormalizaTestFixture.loadProgress();
       check('progresso da fase é persistido', saved['centro-de-distribuicao']?.completed === true);
 
       doc.querySelector('[data-action="complete-exit"]').click();
@@ -238,7 +266,7 @@
         !doc.querySelector('.building[data-building-id="pedido"]').classList.contains('is-normalized')
       );
       await waitFor(() => {
-        const progress = JSON.parse(win.localStorage.getItem('normaliza:v1:progress') || '{}');
+        const progress = NormalizaTestFixture.loadProgress();
         return !progress['centro-de-distribuicao'];
       }, 'progresso da fase limpo');
 

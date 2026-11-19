@@ -50,6 +50,7 @@
     <pre id="out"></pre>
   </main>
 
+  <script src="./browser-fixture.js"></script>
   <script>
     const frame = document.getElementById('app-frame');
     const summary = document.getElementById('summary');
@@ -68,7 +69,8 @@
       });
     });
 
-    frame.src = '../index.html#/cidade';
+    NormalizaTestFixture.seedActivePlayer({ name: 'Jogador Teste', avatarId: 'analista' });
+    frame.src = '../index.html?test=1#/cidade';
 
     const seed = {
       'centro-de-distribuicao': {
@@ -133,6 +135,49 @@
         revealedHints: 0,
         completed: true,
         score: 100
+      },
+      'gestao-de-funcionarios-e-pedidos': {
+        phaseId: 'gestao-de-funcionarios-e-pedidos',
+        keyDependencyId: 'fd-funcionario-departamento',
+        builtTables: ['pedido', 'funcionario', 'departamento'],
+        tables: {
+          pedido: {
+            attributes: ['pedido', 'cliente', 'funcionario'],
+            primaryKey: ['pedido'],
+            foreignKeys: ['funcionario']
+          },
+          funcionario: {
+            attributes: ['funcionario', 'nome_funcionario', 'departamento'],
+            primaryKey: ['funcionario'],
+            foreignKeys: ['departamento']
+          },
+          departamento: {
+            attributes: ['departamento', 'localizacao'],
+            primaryKey: ['departamento'],
+            foreignKeys: []
+          }
+        },
+        relationships: [
+          {
+            id: 'pedido.funcionario->funcionario.funcionario',
+            fromTable: 'pedido',
+            fromAttribute: 'funcionario',
+            toTable: 'funcionario',
+            toAttribute: 'funcionario'
+          },
+          {
+            id: 'funcionario.departamento->departamento.departamento',
+            fromTable: 'funcionario',
+            fromAttribute: 'departamento',
+            toTable: 'departamento',
+            toAttribute: 'departamento'
+          }
+        ],
+        failedValidations: 0,
+        hintsUsed: 0,
+        revealedHints: 0,
+        completed: true,
+        score: 100
       }
     };
 
@@ -145,7 +190,7 @@
         'aplicação inicializada'
       );
 
-      win.localStorage.setItem('normaliza:v1:progress', JSON.stringify(seed));
+      NormalizaTestFixture.seedProgress(seed);
       const reloaded = new Promise((resolve) => frame.addEventListener('load', resolve, { once: true }));
       win.location.reload();
       await reloaded;
@@ -160,24 +205,24 @@
       doc = frame.contentDocument;
       win = frame.contentWindow;
 
-      const storedAfterReload = JSON.parse(win.localStorage.getItem('normaliza:v1:progress') || '{}');
+      const storedAfterReload = NormalizaTestFixture.loadProgress();
       check(
-        'progresso salvo contém as três fases',
-        ['centro-de-distribuicao', 'rede-de-dependencias', 'cidade-organizada'].every(
+        'progresso salvo contém as quatro fases',
+        ['centro-de-distribuicao', 'rede-de-dependencias', 'cidade-organizada', 'gestao-de-funcionarios-e-pedidos'].every(
           (phaseId) => Boolean(storedAfterReload[phaseId])
         )
       );
       const hudText = doc.querySelector('.hud__score-value').textContent;
-      check(`HUD recupera pontuação acumulada (${hudText})`, hudText === '300 pts');
-      check('três fases aparecem como concluídas', doc.querySelectorAll('.medal.is-earned').length === 3);
+      check(`HUD recupera pontuação acumulada (${hudText})`, hudText === '400 pts');
+      check('quatro fases aparecem como concluídas', doc.querySelectorAll('.medal.is-earned').length === 4);
       check('indicador de evolução chega a 100%', doc.querySelector('.progress-meter').getAttribute('aria-valuenow') === '100');
-      check('painel mostra pontuação acumulada', doc.querySelector('.panel__progress-total').textContent.includes('300'));
+      check('painel mostra pontuação acumulada', doc.querySelector('.panel__progress-total').textContent.includes('400'));
       check('PEDIDO recupera evolução 1FN', doc.querySelector('.building[data-building-id="pedido"]').classList.contains('is-normalized'));
       check('PRODUTO recupera evolução 2FN', doc.querySelector('.building[data-building-id="produto"]').classList.contains('is-normalized'));
       check('FUNCIONÁRIO recupera evolução 3FN', doc.querySelector('.building[data-building-id="funcionario"]').classList.contains('is-normalized'));
       check('ITEM_PEDIDO é recriado após reload', Boolean(doc.querySelector('.building[data-building-id="item_pedido"]')));
       check('DEPARTAMENTO é recriado após reload', Boolean(doc.querySelector('.building[data-building-id="departamento"]')));
-      check('relacionamentos são recriados após reload', doc.querySelectorAll('.city-dependency-link').length === 3);
+      check('relacionamentos são recriados após reload', doc.querySelectorAll('.city-dependency-link').length === 4);
 
       const cityLabel = doc.getElementById('city-svg').getAttribute('aria-label');
       check(
@@ -187,7 +232,7 @@
           cityLabel.includes('CLIENTE') &&
           cityLabel.includes('FUNCIONÁRIO')
       );
-      check('PEDIDO anuncia 1FN no rótulo acessível', doc.querySelector('.building[data-building-id="pedido"]').getAttribute('aria-label').includes('Primeira Forma Normal'));
+      check('PEDIDO anuncia 3FN no rótulo acessível', doc.querySelector('.building[data-building-id="pedido"]').getAttribute('aria-label').includes('Terceira Forma Normal'));
       check('PRODUTO anuncia 2FN no rótulo acessível', doc.querySelector('.building[data-building-id="produto"]').getAttribute('aria-label').includes('Segunda Forma Normal'));
       check('FUNCIONÁRIO anuncia 3FN no rótulo acessível', doc.querySelector('.building[data-building-id="funcionario"]').getAttribute('aria-label').includes('Terceira Forma Normal'));
       check('DEPARTAMENTO anuncia 3FN no rótulo acessível', doc.querySelector('.building[data-building-id="departamento"]').getAttribute('aria-label').includes('Terceira Forma Normal'));
@@ -253,7 +298,7 @@
         'Escape na confirmação preserva o edifício selecionado',
         doc.querySelector('.building[data-building-id="pedido"]').classList.contains('is-selected')
       );
-      check('Escape na confirmação preserva as medalhas', doc.querySelectorAll('.medal.is-earned').length === 3);
+      check('Escape na confirmação preserva as medalhas', doc.querySelectorAll('.medal.is-earned').length === 4);
 
       win.location.hash = '#/fase/centro-de-distribuicao';
       await waitFor(
@@ -287,11 +332,11 @@
 
       doc.querySelector('.panel__progress .btn--reset-game').click();
       await waitFor(() => doc.querySelector('#confirm-root .confirm-dialog'), 'confirmação de reset');
-      check('reset total pede confirmação', doc.querySelector('#confirm-root .modal__title').textContent.includes('Reiniciar todo o jogo'));
+      check('reset total pede confirmação', doc.querySelector('#confirm-root .modal__title').textContent.includes('Reiniciar meu progresso'));
 
       doc.querySelector('#confirm-root .confirm-dialog .btn--ghost').click();
       await waitFor(() => !doc.querySelector('#confirm-root .confirm-dialog'), 'reset cancelado');
-      check('cancelar preserva o progresso', doc.querySelectorAll('.medal.is-earned').length === 3);
+      check('cancelar preserva o progresso', doc.querySelectorAll('.medal.is-earned').length === 4);
 
       doc.querySelector('.panel__progress .btn--reset-game').click();
       await waitFor(() => doc.querySelector('#confirm-root .confirm-dialog'), 'confirmação de reset novamente');
@@ -300,10 +345,10 @@
       await waitFor(() => !doc.getElementById('splash-screen').hidden, 'retorno à tela inicial após reset');
       check('reset total volta para a tela inicial', win.location.hash === '#/' || win.location.hash === '');
 
-      const stored = JSON.parse(win.localStorage.getItem('normaliza:v1:progress') || '{}');
-      check('reset total limpa o progresso salvo', !stored['centro-de-distribuicao'] && !stored['rede-de-dependencias'] && !stored['cidade-organizada']);
+      const stored = NormalizaTestFixture.loadProgress();
+      check('reset total limpa o progresso salvo', !stored['centro-de-distribuicao'] && !stored['rede-de-dependencias'] && !stored['cidade-organizada'] && !stored['gestao-de-funcionarios-e-pedidos']);
 
-      doc.getElementById('btn-start').click();
+      doc.querySelector('.home-menu__btn.is-primary').click();
       await waitFor(() => !doc.getElementById('game-screen').hidden, 'cidade após reset');
       check('HUD volta a zero', doc.querySelector('.hud__score-value').textContent === '0 pts');
       check('medalhas voltam a zero', doc.querySelectorAll('.medal.is-earned').length === 0);

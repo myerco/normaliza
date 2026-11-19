@@ -50,6 +50,7 @@
     <pre id="out"></pre>
   </main>
 
+  <script src="./browser-fixture.js"></script>
   <script>
     const frame = document.getElementById('app-frame');
     const summary = document.getElementById('summary');
@@ -63,7 +64,8 @@
       });
     });
 
-    frame.src = '../index.html#/cidade/funcionario';
+    NormalizaTestFixture.seedActivePlayer({ name: 'Jogador Teste', avatarId: 'analista' });
+    frame.src = '../index.html?test=1#/cidade/funcionario';
 
     async function run() {
       const win = frame.contentWindow;
@@ -180,7 +182,7 @@
           doc.querySelectorAll('.city-dependency-link').length === 1
       );
 
-      const saved = JSON.parse(win.localStorage.getItem('normaliza:v1:progress') || '{}');
+      const saved = NormalizaTestFixture.loadProgress();
       check('progresso da fase 3 é persistido', saved['cidade-organizada']?.completed === true);
 
       phase3.querySelector('[data-action="complete-exit"]').click();
@@ -222,7 +224,7 @@
         !doc.querySelector('.building[data-building-id="funcionario"]').classList.contains('is-normalized')
       );
       await waitFor(() => {
-        const progress = JSON.parse(win.localStorage.getItem('normaliza:v1:progress') || '{}');
+        const progress = NormalizaTestFixture.loadProgress();
         return !progress['cidade-organizada'];
       }, 'progresso da fase 3 limpo');
 

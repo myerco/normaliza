@@ -1,3 +1,4 @@
+import { avatarNode } from './avatar.js';
 import { el } from './dom.js';
 
 export function updateHudScore(root, score) {
@@ -27,12 +28,21 @@ export function updateHudPhase(root, { eyebrow, label }) {
   }
 }
 
-export function renderHud(root, hud, { onMenu } = {}) {
+export function renderHud(root, hud, { onMenu, player = null, rank = null } = {}) {
   root.replaceChildren(
     el('div', { class: 'hud__brand' }, [
       el('span', { class: 'hud__logo' }, 'NORMALIZA!'),
       el('span', { class: 'hud__tagline' }, 'Cidade dos dados')
     ]),
+    player
+      ? el('div', { class: 'hud__player' }, [
+          avatarNode(player.avatarId, { size: 'xs' }),
+          el('span', { class: 'hud__player-main' }, [
+            el('strong', {}, player.name),
+            el('span', {}, rank ? `#${rank} no ranking` : 'Ranking local')
+          ])
+        ])
+      : null,
     el('div', { class: 'hud__phase' }, [
       el('span', { class: 'hud__label' }, 'Fase'),
       el('strong', { class: 'hud__phase-name' }, hud.phaseLabel)

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>NORMALIZA! demonstração</title>
+</head>
+<body>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const playerId = 'demo-player';
+    const now = new Date().toISOString();
+    const player = {
+      id: playerId,
+      name: 'Ana Construtora',
+      avatarId: 'engenheiro',
+      createdAt: now,
+      updatedAt: now,
+      lastActivityAt: now,
+      remoteId: null,
+      remoteOwnerId: null,
+      syncStatus: 'local'
+    };
+
+    localStorage.setItem(
+      'normaliza:v2:players',
+      JSON.stringify({ version: 2, activePlayerId: playerId, players: [player] })
+    );
+
+    if (params.get('ranking') === '1') {
+      localStorage.setItem(
+        `normaliza:v2:player:${playerId}:ranking`,
+        JSON.stringify({
+          updatedAt: now,
+          rows: [
+            {
+              player_id: 'demo-rival-1',
+              name: 'Carla Engenheira',
+              avatar_id: 'engenheiro',
+              total_score: 400,
+              completed_phases: 4,
+              score_achieved_at: now
+            },
+            {
+              player_id: playerId,
+              name: player.name,
+              avatar_id: player.avatarId,
+              total_score: 320,
+              completed_phases: 3,
+              score_achieved_at: now
+            },
+            {
+              player_id: 'demo-rival-2',
+              name: 'Bruno Arquiteto',
+              avatar_id: 'arquiteto',
+              total_score: 260,
+              completed_phases: 3,
+              score_achieved_at: now
+            }
+          ]
+        })
+      );
+    }
+
+    if (params.get('completo') === '1') {
+      const progress = {
+        'centro-de-distribuicao': {
+          phaseId: 'centro-de-distribuicao',
+          items: [
+            { orderId: '001', product: 'Caneta' },
+            { orderId: '001', product: 'Lápis' },
+            { orderId: '002', product: 'Borracha' },
+            { orderId: '002', product: 'Régua' },
+            { orderId: '003', product: 'Caneta' }
+          ],
+          failedValidations: 0,
+          hintsUsed: 0,
+          revealedHints: 0,
+          completed: true,
+          score: 100
+        },
+        'rede-de-dependencias': {
+          phaseId: 'rede-de-dependencias',
+          dependencies: [
+            { id: 'pedido+produto->quantidade', determinant: ['pedido', 'produto'], dependent: 'quantidade', type: 'total' },
+            { id: 'produto->descricao', determinant: ['produto'], dependent: 'descricao', type: 'partial' },
+            { id: 'produto->preco', determinant: ['produto'], dependent: 'preco', type: 'partial' }
+          ],
+          tables: {
+            item_pedido: { attributes: ['pedido', 'produto', 'quantidade'], primaryKey: ['pedido', 'produto'] },
+            produto: { attributes: ['produto', 'descricao', 'preco'], primaryKey: ['produto'] }
+          },
+          failedValidations: 0,
+          hintsUsed: 0,
+          revealedHints: 0,
+          completed: true,
+          score: 100
+        },
+        'cidade-organizada': {
+          phaseId: 'cidade-organizada',
+          transitiveDependencyId: 'fd-localizacao',
+          builtTables: ['funcionario', 'departamento'],
+          tables: {
+            funcionario: {
+              attributes: ['cpf', 'nome', 'departamento'],
+              primaryKey: ['cpf'],
+              foreignKeys: ['departamento']
+            },
+            departamento: {
+              attributes: ['departamento', 'localizacao'],
+              primaryKey: ['departamento'],
+              foreignKeys: []
+            }
+          },
+          relationships: [
+            {
+              id: 'funcionario.departamento->departamento.departamento',
+              fromTable: 'funcionario',
+              fromAttribute: 'departamento',
+              toTable: 'departamento',
+              toAttribute: 'departamento'
+            }
+          ],
+          failedValidations: 0,
+          hintsUsed: 0,
+          revealedHints: 0,
+          completed: true,
+          score: 100
+        },
+        'gestao-de-funcionarios-e-pedidos': {
+          phaseId: 'gestao-de-funcionarios-e-pedidos',
+          keyDependencyId: 'fd-funcionario-departamento',
+          builtTables: ['pedido', 'funcionario', 'departamento'],
+          tables: {
+            pedido: {
+              attributes: ['pedido', 'cliente', 'funcionario'],
+              primaryKey: ['pedido'],
+              foreignKeys: ['funcionario']
+            },
+            funcionario: {
+              attributes: ['funcionario', 'nome_funcionario', 'departamento'],
+              primaryKey: ['funcionario'],
+              foreignKeys: ['departamento']
+            },
+            departamento: {
+              attributes: ['departamento', 'localizacao'],
+              primaryKey: ['departamento'],
+              foreignKeys: []
+            }
+          },
+          relationships: [
+            {
+              id: 'pedido.funcionario->funcionario.funcionario',
+              fromTable: 'pedido',
+              fromAttribute: 'funcionario',
+              toTable: 'funcionario',
+              toAttribute: 'funcionario'
+            },
+            {
+              id: 'funcionario.departamento->departamento.departamento',
+              fromTable: 'funcionario',
+              fromAttribute: 'departamento',
+              toTable: 'departamento',
+              toAttribute: 'departamento'
+            }
+          ],
+          failedValidations: 0,
+          hintsUsed: 0,
+          revealedHints: 0,
+          completed: true,
+          score: 100
+        }
+      };
+
+      localStorage.setItem(
+        `normaliza:v2:player:${playerId}:progress`,
+        JSON.stringify(progress)
+      );
+    }
+
+    const route = params.get('rota') || 'cidade';
+    location.replace(`../index.html?test=1#/${route}`);
+  </script>
+</body>
+</html>

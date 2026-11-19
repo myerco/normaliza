@@ -7,6 +7,20 @@ export function parseRoute(hash = '') {
   }
 
   const parts = cleaned.split('/').map(decodePart);
+  const pages = {
+    perfil: 'profile',
+    personagem: 'character',
+    ranking: 'ranking',
+    conquistas: 'achievements',
+    sobre: 'about',
+    desafios: 'challenges',
+    admin: 'admin',
+    arvore: 'knowledge'
+  };
+
+  if (pages[parts[0]]) {
+    return { screen: pages[parts[0]], buildingId: null };
+  }
 
   if (parts[0] === 'missao') {
     return parts[1]
@@ -31,6 +45,38 @@ export function parseRoute(hash = '') {
 export function toHash(route) {
   if (!route) {
     return '#/';
+  }
+
+  if (route.screen === 'profile') {
+    return '#/perfil';
+  }
+
+  if (route.screen === 'character') {
+    return '#/personagem';
+  }
+
+  if (route.screen === 'ranking') {
+    return '#/ranking';
+  }
+
+  if (route.screen === 'achievements') {
+    return '#/conquistas';
+  }
+
+  if (route.screen === 'about') {
+    return '#/sobre';
+  }
+
+  if (route.screen === 'challenges') {
+    return '#/desafios';
+  }
+
+  if (route.screen === 'admin') {
+    return '#/admin';
+  }
+
+  if (route.screen === 'knowledge') {
+    return '#/arvore';
   }
 
   if (route.screen === 'mission') {

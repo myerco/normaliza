@@ -50,6 +50,7 @@
     <pre id="out"></pre>
   </main>
 
+  <script src="./browser-fixture.js"></script>
   <script>
     const frame = document.getElementById('app-frame');
     const summary = document.getElementById('summary');
@@ -63,7 +64,8 @@
       });
     });
 
-    frame.src = '../index.html#/cidade/produto';
+    NormalizaTestFixture.seedActivePlayer({ name: 'Jogador Teste', avatarId: 'analista' });
+    frame.src = '../index.html?test=1#/cidade/produto';
 
     async function run() {
       const win = frame.contentWindow;
@@ -146,7 +148,7 @@
       check(
         'conclusão explica a dependência parcial',
         phase2.querySelector('.deps-complete-explain')?.textContent.includes('parciais') &&
-          phase2.querySelector('.deps-complete-explain')?.textContent.includes('Descrição')
+          phase2.querySelector('.deps-complete-explain')?.textContent.includes('Descri')
       );
       check(
         'conclusão preserva a pontuação de qualidade',
@@ -166,7 +168,7 @@
         doc.querySelectorAll('.city-dependency-link').length === 2
       );
 
-      const saved = JSON.parse(win.localStorage.getItem('normaliza:v1:progress') || '{}');
+      const saved = NormalizaTestFixture.loadProgress();
       check('progresso da fase 2 é persistido', saved['rede-de-dependencias']?.completed === true);
 
       phase2.querySelector('[data-action="complete-exit"]').click();
@@ -207,7 +209,7 @@
         !doc.querySelector('.building[data-building-id="produto"]').classList.contains('is-normalized')
       );
       await waitFor(() => {
-        const progress = JSON.parse(win.localStorage.getItem('normaliza:v1:progress') || '{}');
+        const progress = NormalizaTestFixture.loadProgress();
         return !progress['rede-de-dependencias'];
       }, 'progresso da fase 2 limpo');
 

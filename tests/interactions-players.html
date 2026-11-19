@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Testes de jogadores, perfil e ranking — NORMALIZA!</title>
+  <style>
+    html,
+    body {
+      margin: 0;
+      background: #07111d;
+      color: #f7f1e3;
+      font-family: "Segoe UI", system-ui, sans-serif;
+    }
+
+    main {
+      padding: 1rem;
+    }
+
+    iframe {
+      width: 1200px;
+      max-width: 100%;
+      height: 900px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      background: #0b1622;
+    }
+
+    pre {
+      padding: 1rem;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      white-space: pre-wrap;
+    }
+
+    body[data-interaction-status="pass"] #out {
+      border-left: 4px solid #2a9d8f;
+    }
+
+    body[data-interaction-status="fail"] #out {
+      border-left: 4px solid #e76f51;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Jogadores, perfis, ranking e conquistas</h1>
+    <p id="summary">Executando…</p>
+    <iframe id="app-frame" title="Aplicação NORMALIZA! para testes de jogadores"></iframe>
+    <pre id="out"></pre>
+  </main>
+
+  <script src="./browser-fixture.js"></script>
+  <script>
+    const frame = document.getElementById('app-frame');
+    const summary = document.getElementById('summary');
+    const out = document.getElementById('out');
+    const checks = [];
+    let started = false;
+    let win;
+    let doc;
+
+    frame.addEventListener('load', () => {
+      if (started) {
+        return;
+      }
+      started = true;
+      win = frame.contentWindow;
+      doc = frame.contentDocument;
+      run().catch((error) => {
+        checks.push({ name: 'execução geral', ok: false, detail: String(error && error.stack || error) });
+        finish(error);
+      });
+    });
+
+    NormalizaTestFixture.clearPlayerData();
+    frame.src = '../index.html?test=1#/';
+
+    async function run() {
+      await waitFor(
+        () => doc.documentElement.dataset.appReady === 'true' && doc.querySelector('#player-name'),
+        'identificação inicial'
+      );
+      check('primeiro acesso mostra identificação', Boolean(doc.querySelector('#player-name')));
+      check('avatar gallery tem cinco opções', doc.querySelectorAll('.avatar-option').length === 5);
+
+      setInput(doc.querySelector('#player-name'), 'Ana');
+      setInput(doc.querySelector('#player-bio'), 'Exploradora de dados.');
+      doc.querySelector('[data-avatar-id="engenheiro"]').click();
+      await reloadByClick(doc.querySelector('.identity-form button[type="submit"]'));
+
+      await waitFor(() => doc.querySelector('.home-player__identity')?.textContent.includes('Ana'), 'home da Ana');
+      check('perfil Ana é criado', doc.querySelector('.home-player__identity').textContent.includes('Ana'));
+      check('avatar escolhido é aplicado', doc.querySelector('.home-player__identity .avatar--xl').className.includes('avatar'));
+      check('ranking começa sem posição', doc.querySelector('.home-stat--rank').textContent.includes('Ainda'));
+
+      const registryAfterFirst = readRegistry();
+      check('registry tem um jogador', registryAfterFirst.players.length === 1);
+      check('jogador ativo é Ana', registryAfterFirst.players.find((player) => player.id === registryAfterFirst.activePlayerId).name === 'Ana');
+      check('novo jogador ainda não tem personagem', !win.localStorage.getItem(`normaliza:v2:player:${registryAfterFirst.activePlayerId}:characters`));
+
+      const createCharacterButton = [...doc.querySelectorAll('.home-menu__btn')].find((button) =>
+        button.textContent.includes('Criar personagem')
+      );
+      createCharacterButton.click();
+      await waitFor(
+        () => win.location.hash === '#/personagem' && doc.querySelector('.character-edit'),
+        'criação de personagem'
+      );
+      check('página oferece três arquétipos', doc.querySelectorAll('.character-edit [data-archetype-id]').length === 3);
+      check('página oferece imagens de personagem', doc.querySelectorAll('.character-edit [data-avatar-id]').length === 5);
+
+      setInput(doc.querySelector('.character-edit .text-input'), 'Ana Arquiteta');
+      doc.querySelector('.character-edit [data-archetype-id="arquiteto"]').click();
+      doc.querySelector('.character-edit [data-avatar-id="analista"]').click();
+      doc.querySelector('.character-edit button[type="submit"]').click();
+      await waitFor(() => doc.querySelector('.character-card') && doc.querySelector('.form-success'), 'personagem criado');
+      check('ficha mostra o personagem', doc.querySelector('.character-card').textContent.includes('Ana Arquiteta'));
+      check('ficha mostra o arquétipo', doc.querySelector('.character-card').textContent.includes('Arquiteto'));
+      check('ficha mostra os quatro atributos', doc.querySelectorAll('.character-attribute').length === 4);
+
+      const storedCharacters = JSON.parse(win.localStorage.getItem(`normaliza:v2:player:${registryAfterFirst.activePlayerId}:characters`));
+      check('personagem é persistido', storedCharacters.characters.length === 1);
+      check('imagem do personagem é persistida', storedCharacters.characters[0].imageId === 'analista');
+      check('arquétipo do personagem é persistido', storedCharacters.characters[0].archetypeId === 'arquiteto');
+
+      doc.querySelector('.page-header .btn').click();
+      await waitFor(() => !doc.getElementById('splash-screen').hidden, 'retorno à jornada após personagem');
+      check('home mostra o nome do personagem', doc.querySelector('.home-player__identity').textContent.includes('Ana Arquiteta'));
+      check('home mostra o arquétipo do personagem', doc.querySelector('.home-player__identity').textContent.includes('Arquiteto'));
+
+      clickMenuItem('Meu Perfil');
+      await waitFor(() => doc.querySelector('.profile-layout'), 'página de perfil');
+      check('perfil mostra nome e pontuação', doc.querySelector('.profile-card h2').textContent === 'Ana');
+      check('perfil mostra a biografia do jogador', doc.querySelector('.profile-bio').textContent.includes('Exploradora de dados.'));
+
+      setInput(doc.querySelector('.profile-edit .text-input'), 'Ana Maria');
+      doc.querySelector('[data-avatar-id="construtor"]').click();
+      doc.querySelector('.profile-edit button[type="submit"]').click();
+      await waitFor(() => doc.querySelector('.form-success'), 'perfil salvo');
+      check('edição de nome é aplicada', doc.querySelector('.profile-card h2').textContent === 'Ana Maria');
+
+      doc.querySelector('.profile-actions .btn--ghost + .btn--ghost')?.click();
+      await waitFor(() => Boolean(doc.querySelector('#player-name')), 'seleção de jogadores');
+      check('troca de jogador abre identificação', Boolean(doc.querySelector('.profile-picker')));
+
+      setInput(doc.querySelector('#player-name'), 'Ana Maria');
+      doc.querySelector('.identity-form button[type="submit"]').click();
+      await waitFor(() => doc.querySelector('.form-error')?.textContent.includes('já está em uso'), 'nome duplicado');
+      check('nome duplicado é rejeitado', true);
+
+      setInput(doc.querySelector('#player-name'), 'Beto');
+      doc.querySelector('[data-avatar-id="construtor"]').click();
+      await reloadByClick(doc.querySelector('.identity-form button[type="submit"]'));
+      await waitFor(() => doc.querySelector('.home-player__identity')?.textContent.includes('Beto'), 'home do Beto');
+      check('segundo jogador é criado', doc.querySelector('.home-player__identity').textContent.includes('Beto'));
+
+      const registryAfterSecond = readRegistry();
+      check('registry tem dois jogadores', registryAfterSecond.players.length === 2);
+      check('Beto é o jogador ativo', registryAfterSecond.players.find((player) => player.id === registryAfterSecond.activePlayerId).name === 'Beto');
+
+      clickMenuItem('Meu Perfil');
+      await waitFor(() => doc.querySelector('.profile-layout'), 'perfil do Beto');
+      doc.querySelector('.profile-actions .btn--ghost + .btn--ghost')?.click();
+      await waitFor(() => Boolean(doc.querySelector('.profile-pick')), 'lista de perfis');
+      const anaButton = [...doc.querySelectorAll('.profile-pick')].find((button) =>
+        button.textContent.includes('Ana Maria')
+      );
+      await reloadByClick(anaButton);
+      await waitFor(() => doc.querySelector('.home-player__identity')?.textContent.includes('Ana Maria'), 'retorno à Ana');
+      check('troca para Ana restaura seu perfil', doc.querySelector('.home-player__identity').textContent.includes('Ana Maria'));
+
+      const editCharacterButton = [...doc.querySelectorAll('.home-menu__btn')].find((button) =>
+        button.textContent.includes('Selecionar personagem')
+      );
+      editCharacterButton.click();
+      await waitFor(
+        () => win.location.hash === '#/personagem' && doc.querySelector('.character-card'),
+        'ficha do personagem'
+      );
+      check('ficha preenche o nome atual', doc.querySelector('.character-edit .text-input').value === 'Ana Arquiteta');
+      setInput(doc.querySelector('.character-edit .text-input'), 'Ana Maria Analista');
+      doc.querySelector('.character-edit [data-archetype-id="analista"]').click();
+      doc.querySelector('.character-edit [data-avatar-id="engenheiro"]').click();
+      doc.querySelector('.character-edit button[type="submit"]').click();
+      await waitFor(
+        () => doc.querySelector('.character-card')?.textContent.includes('Ana Maria Analista') &&
+          doc.querySelector('.form-success'),
+        'personagem editado'
+      );
+      check('edição do personagem é persistida', doc.querySelector('.character-card').textContent.includes('Analista'));
+      doc.querySelector('.page-header .btn').click();
+      await waitFor(() => !doc.getElementById('splash-screen').hidden, 'retorno da ficha');
+      check('home reflete o personagem editado', doc.querySelector('.home-player__identity').textContent.includes('Ana Maria Analista'));
+
+      const currentId = readRegistry().activePlayerId;
+      const now = new Date().toISOString();
+      win.localStorage.setItem(
+        `normaliza:v2:player:${currentId}:ranking`,
+        JSON.stringify({
+          updatedAt: now,
+          rows: [
+            {
+              player_id: currentId,
+              name: 'Ana Maria',
+              avatar_id: 'construtor',
+              total_score: 250,
+              completed_phases: 2,
+              score_achieved_at: now
+            },
+            {
+              player_id: 'other-player',
+              name: 'Concorrente',
+              avatar_id: 'analista',
+              total_score: 300,
+              completed_phases: 3,
+              score_achieved_at: now
+            }
+          ]
+        })
+      );
+
+      clickMenuItem('Ranking');
+      await waitFor(() => doc.querySelector('.ranking-table-card'), 'página de ranking');
+      await waitFor(() => doc.querySelectorAll('.ranking-table tbody tr').length === 2, 'ranking carregado');
+      check('ranking mostra modo offline', Boolean(doc.querySelector('.ranking-offline')));
+      check('ranking mostra a posição atual', doc.querySelector('.ranking-current__position').textContent.includes('#2'));
+      check('ranking mostra o pódio', doc.querySelectorAll('.ranking-podium__card').length === 2);
+
+      clickPageBack();
+      await waitFor(
+        () => !doc.getElementById('splash-screen').hidden && doc.querySelector('.home-player__identity'),
+        'home após ranking'
+      );
+      check('home atualiza a posição do ranking', doc.querySelector('.home-stat--rank').textContent.includes('#2'));
+
+      clickMenuItem('Conquistas');
+      await waitFor(() => doc.querySelector('.achievements-page'), 'página de conquistas');
+      check('conquistas mostram fases e missão', doc.querySelectorAll('.achievement-card').length === 5);
+      check('conquistas começam bloqueadas', doc.querySelectorAll('.achievement-card.is-locked').length === 5);
+      clickPageBack();
+      await waitFor(
+        () => !doc.getElementById('splash-screen').hidden && doc.querySelector('.home-player__identity'),
+        'home após conquistas'
+      );
+
+      const glossaryButton = [...doc.querySelectorAll('.home-menu__btn')].find((button) =>
+        button.textContent.includes('Glossário')
+      );
+      glossaryButton.click();
+      await waitFor(() => doc.querySelector('#help-root .help-dialog'), 'glossário aberto');
+      check('menu abre glossário', doc.querySelector('#help-root .modal__title').textContent.includes('Ajuda'));
+      doc.querySelector('#help-root .help-dialog .icon-button').click();
+      await waitFor(() => !doc.querySelector('#help-root .help-dialog'), 'glossário fechado');
+
+      clickMenuItem('Sobre o jogo');
+      await waitFor(() => doc.querySelector('.about-hero'), 'página sobre');
+      check('menu abre Sobre o jogo', win.location.hash === '#/sobre');
+
+      finish();
+    }
+
+    function clickMenuItem(label) {
+      const button = [...doc.querySelectorAll('.home-menu__btn')].find((candidate) =>
+        candidate.textContent.includes(label)
+      );
+
+      if (!button) {
+        throw new Error(`Item de menu não encontrado: ${label}`);
+      }
+
+      button.click();
+    }
+
+    function clickPageBack() {
+      const button = doc.querySelector('.page-header .btn');
+      if (!button) {
+        throw new Error('Botão de retorno não encontrado.');
+      }
+      button.click();
+    }
+
+    function setInput(input, value) {
+      input.value = value;
+      input.dispatchEvent(new win.Event('input', { bubbles: true }));
+    }
+
+    async function reloadByClick(element) {
+      const loaded = new Promise((resolve) => frame.addEventListener('load', resolve, { once: true }));
+      element.click();
+      await loaded;
+      await waitFor(
+        () => frame.contentDocument.documentElement.dataset.appReady === 'true',
+        'recarregar aplicação'
+      );
+      win = frame.contentWindow;
+      doc = frame.contentDocument;
+    }
+
+    function readRegistry() {
+      return JSON.parse(win.localStorage.getItem('normaliza:v2:players') || '{}');
+    }
+
+    function check(name, condition) {
+      if (!condition) {
+        throw new Error(`Falhou: ${name}`);
+      }
+
+      checks.push({ name, ok: true });
+    }
+
+    function waitFor(predicate, description, timeout = 9000) {
+      return new Promise((resolve, reject) => {
+        const startedAt = Date.now();
+
+        const tick = () => {
+          try {
+            if (predicate()) {
+              resolve();
+              return;
+            }
+          } catch (error) {
+            reject(error);
+            return;
+          }
+
+          if (Date.now() - startedAt > timeout) {
+            reject(new Error(`Timeout aguardando: ${description}`));
+            return;
+          }
+
+          setTimeout(tick, 50);
+        };
+
+        tick();
+      });
+    }
+
+    function finish(error) {
+      const failed = Boolean(error) || checks.some((checkItem) => !checkItem.ok);
+      const passed = checks.filter((checkItem) => checkItem.ok).length;
+
+      document.body.dataset.interactionStatus = failed ? 'fail' : 'pass';
+      summary.textContent = failed
+        ? `Falha nos testes de jogadores (${passed} verificações passaram).`
+        : `Todos os testes de jogadores passaram (${passed} verificações).`;
+      out.textContent = JSON.stringify({ failed, checks, error: error ? String(error) : null }, null, 2);
+      document.title = failed ? 'FAIL — Jogadores NORMALIZA!' : 'PASS — Jogadores NORMALIZA!';
+    }
+  </script>
+</body>
+</html>

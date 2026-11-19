@@ -50,6 +50,7 @@
     <pre id="out"></pre>
   </main>
 
+  <script src="./browser-fixture.js"></script>
   <script>
     const frame = document.getElementById('app-frame');
     const summary = document.getElementById('summary');
@@ -63,7 +64,8 @@
       });
     });
 
-    frame.src = '../index.html#/cidade';
+    NormalizaTestFixture.seedActivePlayer({ name: 'Jogador Teste', avatarId: 'analista' });
+    frame.src = '../index.html?test=1#/cidade';
 
     async function run() {
       const win = frame.contentWindow;

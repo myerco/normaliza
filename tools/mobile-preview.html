@@ -29,17 +29,63 @@
 <body>
   <iframe id="preview-frame" title="Prévia mobile do NORMALIZA!"></iframe>
   <script>
+    const now = new Date().toISOString();
+    const playerId = 'mobile-demo-player';
+    localStorage.setItem(
+      'normaliza:v2:players',
+      JSON.stringify({
+        version: 2,
+        activePlayerId: playerId,
+        players: [
+          {
+            id: playerId,
+            name: 'Ana Construtora',
+            avatarId: 'construtor',
+            createdAt: now,
+            updatedAt: now,
+            lastActivityAt: now,
+            remoteId: null,
+            remoteOwnerId: null,
+            syncStatus: 'local'
+          }
+        ]
+      })
+    );
+    localStorage.setItem(
+      `normaliza:v2:player:${playerId}:ranking`,
+      JSON.stringify({
+        updatedAt: now,
+        rows: [
+          { player_id: 'r1', name: 'Carla Engenheira', avatar_id: 'engenheiro', total_score: 400, completed_phases: 4, score_achieved_at: now },
+          { player_id: playerId, name: 'Ana Construtora', avatar_id: 'construtor', total_score: 320, completed_phases: 3, score_achieved_at: now },
+          { player_id: 'r2', name: 'Bruno Arquiteto', avatar_id: 'arquiteto', total_score: 260, completed_phases: 3, score_achieved_at: now }
+        ]
+      })
+    );
+
     const route = new URLSearchParams(window.location.search).get('rota');
-    document.getElementById('preview-frame').src =
+    const suffix =
       route === 'fase'
-        ? '../index.html#/fase/centro-de-distribuicao'
+        ? '#/fase/centro-de-distribuicao'
         : route === 'fase2'
-          ? '../index.html#/fase/rede-de-dependencias'
+          ? '#/fase/rede-de-dependencias'
           : route === 'fase3'
-            ? '../index.html#/fase/cidade-organizada'
-            : route === 'missao'
-              ? '../index.html#/missao/administracao'
-              : '../index.html#/cidade/pedido';
+            ? '#/fase/cidade-organizada'
+            : route === 'fase4'
+              ? '#/fase/gestao-de-funcionarios-e-pedidos'
+              : route === 'missao'
+                ? '#/missao/administracao'
+                : route === 'perfil'
+                  ? '#/perfil'
+                  : route === 'ranking'
+                    ? '#/ranking'
+                    : route === 'conquistas'
+                      ? '#/conquistas'
+                      : route === 'home'
+                        ? '#/'
+                        : '#/cidade/pedido';
+
+    document.getElementById('preview-frame').src = `../index.html?test=1${suffix}`;
   </script>
 </body>
 </html>
