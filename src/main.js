@@ -102,6 +102,13 @@ import {
 import { renderHud, updateHudPhase, updateHudScore } from './ui/hud.js';
 import { renderPanel } from './ui/infoPanel.js';
 import { renderHome } from './ui/home.js';
+import { renderPlayerHome } from './ui/playerHome.js';
+import {
+  isPrivatePlayerScreen,
+  mountPlayerPageFrame,
+  playerSectionFor,
+  resetPlayerPageFrame
+} from './ui/playerLayout.js';
 import { renderPublicHome } from './ui/publicHome.js';
 import { renderAuthPage, renderOnboardingPage } from './ui/auth.js';
 import { renderChallengesPage } from './ui/challenges.js';
@@ -117,6 +124,29 @@ import { renderSkillsPage } from './ui/skills.js';
 import { renderSpecializationsPage } from './ui/specializations.js';
 import { renderAdminPage } from './ui/admin.js';
 import { renderWorldAdminPage } from './ui/worldAdmin.js';
+import {
+  renderAdminAudit,
+  renderAdminDashboard,
+  renderAdminForbidden,
+  renderAdminPlayers,
+  renderAdminSettings,
+  renderAdminUserDetail,
+  renderAdminUsers
+} from './ui/adminPanel.js';
+import {
+  blockAdminUser,
+  loadAdminAccess,
+  loadAdminAudit,
+  loadAdminDashboard,
+  loadAdminSettings,
+  loadAdminUser,
+  loadAdminUsers,
+  requestAdminPasswordReset,
+  saveAdminSettings,
+  unblockAdminUser,
+  updateAdminUserEmail,
+  updateAdminUserRoles
+} from './services/admin-service.js';
 import { renderCharacterPage } from './ui/character.js';
 import { renderLeaderboardPage } from './ui/leaderboard.js';
 import { renderAchievementsPage } from './ui/achievements.js';
@@ -179,9 +209,18 @@ let activeProgression = null;
 let characterNotice = '';
 let characterError = '';
 let adminNotice = '';
+let adminAccess = null;
+let adminDashboardData = null;
+let adminUsersData = null;
+let adminUserDetail = null;
+let adminAuditData = null;
+let adminSettingsData = null;
+let adminQuery = {};
+let adminAuditQuery = {};
+let adminError = '';
+let adminLoading = false;
 let authNotice = '';
 let authError = '';
-let authMode = 'login';
 let state = null;
 let currentScreen = null;
 let currentPhaseId = null;
@@ -312,6 +351,7 @@ async function boot() {
     activeAuthUser = await getCurrentUser();
 
     if (activeAuthUser) {
+      adminAccess = await loadAdminAccess();
       const serverPlayer = await getAuthenticatedPlayer();
       activePlayer = serverPlayer ? upsertPlayerFromServer(serverPlayer) : null;
     }
@@ -793,7 +833,9 @@ async function handleAuthSubmit({ mode, email, password }) {
       upsertPlayerFromServer(player);
       window.location.hash = consumeReturnTo() ?? '#/jogador';
     } else {
-      window.location.hash = '#/onboarding';
+      const access = await loadAdminAccess();
+      adminAccess = access;
+      window.location.hash = access?.permissions?.length ? '#/admin' : '#/onboarding';
     }
 
     window.location.reload();
@@ -836,7 +878,35 @@ async function handleLogout() {
 function renderHomeScreen() {
   const summary = getProfileSummary();
   const profiles = listLocalPlayers();
-  const rankingMessage = summary?.rank ? `#${summary.rank}` : 'Ainda não ranqueado';
+  const rankingMessage = summary?.rank ? `#${summary.rank}` : 'Ainda nǜo ranqueado';
+  const questProgress = activeCharacter
+    ? loadQuestProgress(activeCharacter.id).quests
+    : {};
+
+  if (!isTestMode() && activePlayer) {
+    renderPlayerHome(elements.home, {
+      player: activePlayer,
+      character: activeCharacter,
+      catalog: activeCatalog,
+      progression: activeProgression,
+      summary,
+      world: activeWorld,
+      questCatalog: activeQuestCatalog,
+      questProgress,
+      rankingMessage,
+      onEditCharacter: () => navigate({ screen: 'character' }),
+      onOpenWorld: () => navigate({ screen: 'worldMap' }),
+      onOpenMissions: () => { window.location.hash = '#/missoes'; },
+      onOpenTalents: () => navigate({ screen: 'skills' }),
+      onOpenProfile: () => navigate({ screen: 'profile' }),
+      onOpenRanking: () => navigate({ screen: 'ranking' }),
+      onOpenAchievements: () => navigate({ screen: 'achievements' }),
+      onStartQuest: startCharacterQuest,
+      onOpenQuest: (quest) => navigate({ screen: 'questDetail', questId: quest?.id }),
+      onLogout: handleLogout
+    });
+    return;
+  }
 
   renderHome(elements.home, {
     player: activePlayer,
@@ -920,8 +990,153 @@ function reloadToHome() {
   window.location.reload();
 }
 
+function hasAdminPermission(permission) {
+  return Boolean(adminAccess?.permissions?.includes(permission));
+}
+
+function navigateAdmin(screen) {
+  navigate({ screen });
+}
+
+function renderLegacyAdminPage(fallback = 'admin') {
+  renderAdminPage(elements.pageHost, {
+    player: activePlayer,
+    profiles: listLocalPlayers(),
+    images: loadImageAssets(),
+    catalog: activeCatalog,
+    notice: adminNotice,
+    onBack: () => navigate({ screen: fallback }),
+    onSavePlayer: saveAdminPlayer,
+    onSaveImage: saveAdminImage,
+    onSaveArchetype: saveAdminArchetype,
+    onCreateArchetype: createAdminArchetype,
+    onSaveAttribute: saveAdminAttribute,
+    onCreateAttribute: createAdminAttribute,
+    onSaveValues: saveAdminValues,
+    onOpenWorldAdmin: () => navigate({ screen: 'adminWorld' })
+  });
+}
+
+function ensureAdminDashboard() {
+  if (adminDashboardData || adminLoading) {
+    return;
+  }
+  adminLoading = true;
+  loadAdminDashboard()
+    .then((data) => { adminDashboardData = data; adminError = ''; })
+    .catch((error) => { adminError = error.message; })
+    .finally(() => { adminLoading = false; if (state?.screen === 'admin') render(); });
+}
+
+function ensureAdminUsers() {
+  if (adminUsersData || adminLoading) {
+    return;
+  }
+  adminLoading = true;
+  loadAdminUsers(adminQuery)
+    .then((data) => { adminUsersData = data; adminError = ''; })
+    .catch((error) => { adminError = error.message; })
+    .finally(() => { adminLoading = false; if (state?.screen === 'adminUsers' || state?.screen === 'adminPlayers') render(); });
+}
+
+function updateAdminUsersQuery(query) {
+  adminQuery = query;
+  adminUsersData = null;
+  render();
+}
+
+function ensureAdminUser(userId) {
+  if (!userId || adminUserDetail?.id === userId || adminLoading) {
+    return;
+  }
+  adminLoading = true;
+  loadAdminUser(userId)
+    .then((data) => { adminUserDetail = data; adminError = ''; })
+    .catch((error) => { adminUserDetail = null; adminError = error.message; })
+    .finally(() => { adminLoading = false; if (state?.screen === 'adminUser') render(); });
+}
+
+function ensureAdminAudit() {
+  if (adminAuditData || adminLoading) {
+    return;
+  }
+  adminLoading = true;
+  loadAdminAudit(adminAuditQuery)
+    .then((data) => { adminAuditData = data; adminError = ''; })
+    .catch((error) => { adminError = error.message; })
+    .finally(() => { adminLoading = false; if (state?.screen === 'adminAudit') render(); });
+}
+
+function updateAdminAuditQuery(query) {
+  adminAuditQuery = query;
+  adminAuditData = null;
+  render();
+}
+
+function ensureAdminSettings() {
+  if (adminSettingsData || adminLoading) {
+    return;
+  }
+  adminLoading = true;
+  loadAdminSettings()
+    .then((data) => { adminSettingsData = data; adminError = ''; })
+    .catch((error) => { adminError = error.message; })
+    .finally(() => { adminLoading = false; if (state?.screen === 'adminSettings') render(); });
+}
+
+async function handleAdminBlock(userId, reason) {
+  await runAdminAction(() => blockAdminUser(userId, reason), 'Conta bloqueada.');
+}
+
+async function handleAdminUnblock(userId, reason) {
+  await runAdminAction(() => unblockAdminUser(userId, reason), 'Conta reativada.');
+}
+
+async function handleAdminEmail(userId, email, reason) {
+  await runAdminAction(() => updateAdminUserEmail(userId, email, reason), 'Solicitação de alteração de e-mail registrada.');
+}
+
+async function handleAdminPasswordReset(userId, reason) {
+  try {
+    await requestAdminPasswordReset(userId, reason);
+    adminNotice = 'Solicitação de recuperação registrada.';
+  } catch (error) {
+    adminError = error.message;
+  }
+  render();
+}
+
+async function handleAdminRoles(userId, roleIds) {
+  await runAdminAction(() => updateAdminUserRoles(userId, roleIds), 'Papéis atualizados.');
+}
+
+async function handleAdminSettings({ settings, flags }) {
+  try {
+    adminSettingsData = await saveAdminSettings({ settings, flags });
+    adminNotice = 'Configurações salvas.';
+    adminError = '';
+  } catch (error) {
+    adminError = error.message;
+  }
+  render();
+}
+
+async function runAdminAction(action, successMessage) {
+  adminNotice = '';
+  adminError = '';
+  try {
+    await action();
+    adminNotice = successMessage;
+    adminUsersData = null;
+    adminUserDetail = null;
+  } catch (error) {
+    adminError = error.message;
+  }
+  render();
+}
+
 function renderPageScreen() {
-  if (!activePlayer && !['login', 'register', 'recover', 'onboarding', 'about'].includes(state.screen)) {
+  if (!activePlayer && !['login', 'register', 'recover', 'onboarding', 'about', 'admin', 'adminUsers', 'adminUser', 'adminPlayers', 'adminContent', 'adminWorld', 'adminSettings', 'adminAudit'].includes(state.screen)) {
     window.history.replaceState(null, '', '#/login');
     state = applyRoute(state, { screen: 'login', buildingId: null });
     renderPageScreen();
@@ -930,12 +1145,26 @@ function renderPageScreen() {
 
   const summary = getProfileSummary();
   const achievements = getAchievements();
+  const usePlayerFrame = !isTestMode() && activePlayer && isPrivatePlayerScreen(state.screen);
+
+  if (!usePlayerFrame) {
+    resetPlayerPageFrame(elements.pageHost);
+  }
+
+  const pageHost = usePlayerFrame
+    ? mountPlayerPageFrame(elements.pageHost, {
+        active: playerSectionFor(state.screen, window.location.hash),
+        player: activePlayer,
+        character: activeCharacter,
+        onLogout: handleLogout
+      })
+    : elements.pageHost;
 
   switch (state.screen) {
     case 'login':
     case 'register':
     case 'recover':
-      renderAuthPage(elements.pageHost, {
+      renderAuthPage(pageHost, {
         mode: state.screen === 'register' ? 'register' : state.screen === 'recover' ? 'recover' : 'login',
         notice: authNotice,
         error: authError,
@@ -948,7 +1177,7 @@ function renderPageScreen() {
       break;
 
     case 'onboarding':
-      renderOnboardingPage(elements.pageHost, {
+      renderOnboardingPage(pageHost, {
         user: activeAuthUser,
         error: authError,
         onBack: () => navigate({ screen: 'splash' }),
@@ -958,26 +1187,30 @@ function renderPageScreen() {
       break;
 
     case 'admin':
-      renderAdminPage(elements.pageHost, {
-        player: activePlayer,
-        profiles: listLocalPlayers(),
-        images: loadImageAssets(),
-        catalog: activeCatalog,
-        notice: adminNotice,
-        onBack: () => navigate({ screen: 'splash' }),
-        onSavePlayer: saveAdminPlayer,
-        onSaveImage: saveAdminImage,
-        onSaveArchetype: saveAdminArchetype,
-        onCreateArchetype: createAdminArchetype,
-        onSaveAttribute: saveAdminAttribute,
-        onCreateAttribute: createAdminAttribute,
-        onSaveValues: saveAdminValues,
-        onOpenWorldAdmin: () => navigate({ screen: 'adminWorld' })
-      });
+      if (isTestMode()) {
+        renderLegacyAdminPage('splash');
+      } else if (!hasAdminPermission('admin.dashboard')) {
+        renderAdminForbidden(pageHost, { player: activePlayer, onLogout: handleLogout });
+      } else {
+        ensureAdminDashboard();
+        renderAdminDashboard(pageHost, {
+          player: activePlayer,
+          access: adminAccess,
+          data: adminDashboardData,
+          notice: adminNotice,
+          error: adminError,
+          onNavigate: navigateAdmin,
+          onLogout: handleLogout
+        });
+      }
       break;
 
     case 'adminWorld':
-      renderWorldAdminPage(elements.pageHost, {
+      if (!isTestMode() && !hasAdminPermission('admin.content.write') && !hasAdminPermission('admin.maps.write')) {
+        renderAdminForbidden(pageHost, { player: activePlayer, onLogout: handleLogout });
+        break;
+      }
+      renderWorldAdminPage(pageHost, {
         player: activePlayer,
         world: activeWorld,
         questCatalog: activeQuestCatalog,
@@ -987,8 +1220,114 @@ function renderPageScreen() {
       });
       break;
 
+    case 'adminUsers':
+      if (!hasAdminPermission('admin.users.read')) {
+        renderAdminForbidden(pageHost, { player: activePlayer, onLogout: handleLogout });
+        break;
+      }
+      ensureAdminUsers();
+      renderAdminUsers(pageHost, {
+        player: activePlayer,
+        access: adminAccess,
+        data: adminUsersData,
+        query: adminQuery,
+        notice: adminNotice,
+        error: adminError,
+        onNavigate: navigateAdmin,
+        onLogout: handleLogout,
+        onSearch: updateAdminUsersQuery,
+        onOpenUser: (userId) => navigate({ screen: 'adminUser', userId })
+      });
+      break;
+
+    case 'adminUser':
+      if (!hasAdminPermission('admin.users.read')) {
+        renderAdminForbidden(pageHost, { player: activePlayer, onLogout: handleLogout });
+        break;
+      }
+      ensureAdminUser(state.activeAdminUserId);
+      renderAdminUserDetail(pageHost, {
+        player: activePlayer,
+        access: adminAccess,
+        detail: adminUserDetail,
+        notice: adminNotice,
+        error: adminError,
+        onNavigate: navigateAdmin,
+        onLogout: handleLogout,
+        onBack: () => navigate({ screen: 'adminUsers' }),
+        onBlock: handleAdminBlock,
+        onUnblock: handleAdminUnblock,
+        onEmail: handleAdminEmail,
+        onResetPassword: handleAdminPasswordReset,
+        onRoles: handleAdminRoles
+      });
+      break;
+
+    case 'adminPlayers':
+      if (!hasAdminPermission('admin.players.read')) {
+        renderAdminForbidden(pageHost, { player: activePlayer, onLogout: handleLogout });
+        break;
+      }
+      ensureAdminUsers();
+      renderAdminPlayers(pageHost, {
+        player: activePlayer,
+        access: adminAccess,
+        data: adminUsersData,
+        notice: adminNotice,
+        error: adminError,
+        onNavigate: navigateAdmin,
+        onLogout: handleLogout,
+        onOpenUser: (userId) => navigate({ screen: 'adminUser', userId })
+      });
+      break;
+
+    case 'adminAudit':
+      if (!hasAdminPermission('admin.audit.read')) {
+        renderAdminForbidden(pageHost, { player: activePlayer, onLogout: handleLogout });
+        break;
+      }
+      ensureAdminAudit();
+      renderAdminAudit(pageHost, {
+        player: activePlayer,
+        access: adminAccess,
+        data: adminAuditData,
+        query: adminAuditQuery,
+        notice: adminNotice,
+        error: adminError,
+        onNavigate: navigateAdmin,
+        onLogout: handleLogout,
+        onSearch: updateAdminAuditQuery
+      });
+      break;
+
+    case 'adminSettings':
+      if (!hasAdminPermission('admin.settings.read')) {
+        renderAdminForbidden(pageHost, { player: activePlayer, onLogout: handleLogout });
+        break;
+      }
+      ensureAdminSettings();
+      renderAdminSettings(pageHost, {
+        player: activePlayer,
+        access: adminAccess,
+        data: adminSettingsData,
+        notice: adminNotice,
+        error: adminError,
+        onNavigate: navigateAdmin,
+        onLogout: handleLogout,
+        onSave: handleAdminSettings
+      });
+      break;
+
+    case 'adminContent':
+      if (!isTestMode() && !hasAdminPermission('admin.content.read')) {
+        renderAdminForbidden(pageHost, { player: activePlayer, onLogout: handleLogout });
+        break;
+      }
+      renderLegacyAdminPage('admin');
+      break;
+
     case 'character':
-      renderCharacterPage(elements.pageHost, {
+      renderCharacterPage(pageHost, {
         player: activePlayer,
         character: activeCharacter,
         catalog: activeCatalog,
@@ -1001,7 +1340,7 @@ function renderPageScreen() {
       break;
 
     case 'profile':
-      renderProfilePage(elements.pageHost, {
+      renderProfilePage(pageHost, {
         player: activePlayer,
         character: activeCharacter,
         catalog: activeCatalog,
@@ -1028,7 +1367,7 @@ function renderPageScreen() {
       break;
 
     case 'worldMap':
-      renderWorldMapPage(elements.pageHost, {
+      renderWorldMapPage(pageHost, {
         player: activePlayer,
         world: activeWorld,
         questCatalog: activeQuestCatalog,
@@ -1043,7 +1382,7 @@ function renderPageScreen() {
       break;
 
     case 'territory':
-      renderTerritoryPage(elements.pageHost, {
+      renderTerritoryPage(pageHost, {
         player: activePlayer,
         world: activeWorld,
         territory: activeWorld?.territories?.find(
@@ -1060,7 +1399,7 @@ function renderPageScreen() {
       break;
 
     case 'track':
-      renderTrackPage(elements.pageHost, {
+      renderTrackPage(pageHost, {
         player: activePlayer,
         world: activeWorld,
         track: activeWorld?.tracks?.find((item) => item.id === state.activeTrackId) ?? null,
@@ -1075,7 +1414,7 @@ function renderPageScreen() {
       break;
 
     case 'questDetail':
-      renderQuestDetailPage(elements.pageHost, {
+      renderQuestDetailPage(pageHost, {
         player: activePlayer,
         character: activeCharacter,
         world: activeWorld,
@@ -1093,7 +1432,7 @@ function renderPageScreen() {
       break;
 
     case 'skills':
-      renderSkillsPage(elements.pageHost, {
+      renderSkillsPage(pageHost, {
         player: activePlayer,
         character: activeCharacter,
         world: activeWorld,
@@ -1105,7 +1444,7 @@ function renderPageScreen() {
       break;
 
     case 'specializations':
-      renderSpecializationsPage(elements.pageHost, {
+      renderSpecializationsPage(pageHost, {
         player: activePlayer,
         character: activeCharacter,
         world: activeWorld,
@@ -1116,7 +1455,7 @@ function renderPageScreen() {
       break;
 
     case 'knowledge':
-      renderKnowledgePage(elements.pageHost, {
+      renderKnowledgePage(pageHost, {
         player: activePlayer,
         character: activeCharacter,
         knowledgeCatalog: activeKnowledge,
@@ -1134,7 +1473,7 @@ function renderPageScreen() {
 
     case 'ranking':
       ensureRankingLoaded();
-      renderLeaderboardPage(elements.pageHost, {
+      renderLeaderboardPage(pageHost, {
         player: activePlayer,
         board: rankingState.board,
         loading: rankingState.loading,
@@ -1146,7 +1485,7 @@ function renderPageScreen() {
       break;
 
     case 'challenges':
-      renderChallengesPage(elements.pageHost, {
+      renderChallengesPage(pageHost, {
         player: activePlayer,
         character: activeCharacter,
         catalog: activeQuestCatalog,
@@ -1159,7 +1498,7 @@ function renderPageScreen() {
       break;
 
     case 'achievements':
-      renderAchievementsPage(elements.pageHost, {
+      renderAchievementsPage(pageHost, {
         player: activePlayer,
         achievements,
         summary,
@@ -1168,7 +1507,7 @@ function renderPageScreen() {
       break;
 
     case 'about':
-      renderAboutPage(elements.pageHost, {
+      renderAboutPage(pageHost, {
         player: activePlayer,
         onBack: () => navigate({ screen: 'splash' }),
         onHowToPlay: () => openInstructions()
@@ -1549,6 +1888,17 @@ function handleRoute() {
   let route = parseRoute(window.location.hash);
   const publicScreens = ['splash', 'login', 'register', 'recover', 'about'];
   const authScreens = ['login', 'register', 'recover'];
+  const adminScreens = [
+    'admin',
+    'adminWorld',
+    'adminUsers',
+    'adminUser',
+    'adminPlayers',
+    'adminContent',
+    'adminSettings',
+    'adminAudit'
+  ];
+  const canAdmin = Boolean(adminAccess?.permissions?.length);
 
   if (!isTestMode()) {
     if (!activeAuthUser && !publicScreens.includes(route.screen)) {
@@ -1556,12 +1906,14 @@ function handleRoute() {
       window.history.replaceState(null, '', '#/login');
       route = { screen: 'login', buildingId: null };
     } else if (activeAuthUser && !activePlayer) {
-      if (!['onboarding', ...authScreens].includes(route.screen)) {
+      const allowed = ['onboarding', ...authScreens, ...(canAdmin ? adminScreens : [])];
+      if (!allowed.includes(route.screen)) {
         window.history.replaceState(null, '', '#/onboarding');
         route = { screen: 'onboarding', buildingId: null };
       }
     } else if (activeAuthUser && activePlayer) {
-      if (['splash', 'onboarding', ...authScreens].includes(route.screen)) {
+      const blocked = ['splash', 'onboarding', ...authScreens, ...(canAdmin ? [] : adminScreens)];
+      if (blocked.includes(route.screen)) {
         window.history.replaceState(null, '', '#/jogador');
         route = { screen: 'journey', buildingId: null };
       }
@@ -1647,7 +1999,7 @@ function render() {
   const isCity = state.screen === 'city';
   const isPhase = state.screen === 'phase';
   const isMission = state.screen === 'mission';
-  const isPage = ['profile', 'character', 'knowledge', 'worldMap', 'territory', 'track', 'questDetail', 'skills', 'specializations', 'ranking', 'achievements', 'about', 'challenges', 'admin', 'adminWorld', 'login', 'register', 'recover', 'onboarding'].includes(state.screen);
+  const isPage = ['profile', 'character', 'knowledge', 'worldMap', 'territory', 'track', 'questDetail', 'skills', 'specializations', 'ranking', 'achievements', 'about', 'challenges', 'admin', 'adminWorld', 'adminUsers', 'adminUser', 'adminPlayers', 'adminContent', 'adminSettings', 'adminAudit', 'login', 'register', 'recover', 'onboarding'].includes(state.screen);
   const isGame = isCity || isPhase || isMission;
   const activePhase = isPhase ? getPhaseDefinition(state.activePhaseId) : null;
   const enteringCity = isCity && currentScreen !== 'city';
@@ -1889,7 +2241,7 @@ function handleGlobalKeydown(event) {
     return;
   }
 
-  if (['profile', 'character', 'knowledge', 'worldMap', 'ranking', 'achievements', 'about', 'challenges', 'admin', 'adminWorld'].includes(state.screen)) {
+  if (['profile', 'character', 'knowledge', 'worldMap', 'ranking', 'achievements', 'about', 'challenges', 'admin', 'adminWorld', 'adminUsers', 'adminUser', 'adminPlayers', 'adminContent', 'adminSettings', 'adminAudit'].includes(state.screen)) {
     event.preventDefault();
     navigate({ screen: 'splash', buildingId: null });
     return;
@@ -1948,7 +2300,13 @@ function updateDocumentTitle() {
     specializations: 'Minha Especialização',
     character: 'Meu personagem',
     admin: 'Administração',
-    adminWorld: 'Administração do Mundo'
+    adminWorld: 'Administração de Mapas',
+    adminUsers: 'Usuários',
+    adminUser: 'Detalhe do usuário',
+    adminPlayers: 'Jogadores',
+    adminContent: 'Cadastros',
+    adminSettings: 'Configurações',
+    adminAudit: 'Auditoria'
   };
 
   if (state.screen === 'splash') {

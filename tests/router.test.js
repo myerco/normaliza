@@ -96,8 +96,18 @@ test('rotas do mapa de conhecimento', () => {
   });
   assertEqual(toHash({ screen: 'skills' }), '#/habilidades');
   assertEqual(toHash({ screen: 'specializations' }), '#/especializacoes');
+  assertDeepEqual(parseRoute('#/admin/mapas'), { screen: 'adminWorld', buildingId: null });
   assertDeepEqual(parseRoute('#/admin/mundo'), { screen: 'adminWorld', buildingId: null });
-  assertEqual(toHash({ screen: 'adminWorld' }), '#/admin/mundo');
+  assertEqual(toHash({ screen: 'adminWorld' }), '#/admin/mapas');
+  assertEqual(toHash({ screen: 'adminUsers' }), '#/admin/usuarios');
+  assertEqual(
+    toHash({ screen: 'adminUser', userId: 'user-1' }),
+    '#/admin/usuarios/user-1'
+  );
+  assertEqual(toHash({ screen: 'adminPlayers' }), '#/admin/jogadores');
+  assertEqual(toHash({ screen: 'adminContent' }), '#/admin/cadastros');
+  assertEqual(toHash({ screen: 'adminSettings' }), '#/admin/configuracoes');
+  assertEqual(toHash({ screen: 'adminAudit' }), '#/admin/auditoria');
 });
 
 test('rotas públicas, autenticação e área do jogador', () => {
@@ -106,6 +116,7 @@ test('rotas públicas, autenticação e área do jogador', () => {
   assertDeepEqual(parseRoute('#/recuperar-senha'), { screen: 'recover', buildingId: null });
   assertDeepEqual(parseRoute('#/onboarding'), { screen: 'onboarding', buildingId: null });
   assertDeepEqual(parseRoute('#/jogador'), { screen: 'journey', buildingId: null });
+  assertDeepEqual(parseRoute('#/missoes'), { screen: 'challenges', buildingId: null });
   assertDeepEqual(parseRoute('#/jogador/mundo'), { screen: 'worldMap', buildingId: null });
   assertDeepEqual(parseRoute('#/jogador/habilidades'), { screen: 'skills', buildingId: null });
   assertDeepEqual(parseRoute('#/jogador/quest/normaliza'), {

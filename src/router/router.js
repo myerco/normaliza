@@ -14,6 +14,7 @@ export function parseRoute(hash = '') {
     conquistas: 'achievements',
     sobre: 'about',
     desafios: 'challenges',
+    missoes: 'challenges',
     admin: 'admin',
     mapa: 'worldMap',
     arvore: 'worldMap',
@@ -63,8 +64,27 @@ export function parseRoute(hash = '') {
     }
   }
 
-  if (parts[0] === 'admin' && parts[1] === 'mundo') {
-    return { screen: 'adminWorld', buildingId: null };
+  if (parts[0] === 'admin') {
+    const section = parts[1] ?? null;
+    const adminPages = {
+      usuarios: 'adminUsers',
+      jogadores: 'adminPlayers',
+      cadastros: 'adminContent',
+      mapas: 'adminWorld',
+      mundo: 'adminWorld',
+      configuracoes: 'adminSettings',
+      auditoria: 'adminAudit'
+    };
+
+    if (section === 'usuarios' && parts[2]) {
+      return { screen: 'adminUser', userId: parts[2], buildingId: null };
+    }
+
+    if (section && adminPages[section]) {
+      return { screen: adminPages[section], buildingId: null };
+    }
+
+    return { screen: 'admin', buildingId: null };
   }
 
   if (parts[0] === 'territorio') {
@@ -162,8 +182,34 @@ export function toHash(route) {
     return '#/admin';
   }
 
+  if (route.screen === 'adminUsers') {
+    return '#/admin/usuarios';
+  }
+
+  if (route.screen === 'adminUser') {
+    return route.userId
+      ? `#/admin/usuarios/${encodeURIComponent(route.userId)}`
+      : '#/admin/usuarios';
+  }
+
+  if (route.screen === 'adminPlayers') {
+    return '#/admin/jogadores';
+  }
+
+  if (route.screen === 'adminContent') {
+    return '#/admin/cadastros';
+  }
+
   if (route.screen === 'adminWorld') {
-    return '#/admin/mundo';
+    return '#/admin/mapas';
+  }
+
+  if (route.screen === 'adminSettings') {
+    return '#/admin/configuracoes';
+  }
+
+  if (route.screen === 'adminAudit') {
+    return '#/admin/auditoria';
   }
 
   if (route.screen === 'knowledge' || route.screen === 'worldMap') {

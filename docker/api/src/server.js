@@ -2,12 +2,13 @@ import crypto from 'node:crypto';
 import http from 'node:http';
 import { URL } from 'node:url';
 import { closePool, migrate, pool } from './db.js';
-import { authenticate, createSession, createUser, deleteSession, findUserByEmail, findUserById, recordLogin, validateEmail, validatePassword, verifyPassword } from './auth.js';
+import { authenticate, createSession, createUser, deleteSession, findUserByEmail, findUserById, recordLogin, normalizeEmail, validateEmail, validatePassword, verifyPassword } from './auth.js';
 import { PHASE_DATA } from '../shared/phase-data.js';
 import { isValidAvatar, validatePlayerName } from '../shared/players.js';
 import { scoreSolution } from '../shared/score.js';
 import { levelFromXp, xpForQuest } from '../shared/progression.js';
 import { readContent, saveContent, seedContent } from './content.js';
+import { bootstrapAdmin, getAdminDashboard, getAdminSettings, getUserAccess, getUserDetail, hasPermission, listAudit, listUsers, replaceUserRoles, updateAdminSettings, updateUserStatus, writeAudit } from './admin.js';
 
 const PORT = Number(process.env.PORT || 3000);
 const allowedOrigins = (process.env.APP_ORIGIN || 'http://localhost:8080')
@@ -121,6 +122,21 @@ function publicPlayer(row) {
 
 function normalizeBio(value) {
   return String(value ?? '').trim().slice(0, 280);
+}
+
+async function requirePermission(request, response, session, permission) {
+  if (!session?.userId) {
+    send(request, response, 401, { error: 'Usuário não autenticado.', code: 'unauthorized' });
+    return null;
+  }
+
+  const access = await getUserAccess(session.userId);
+  if (!hasPermission(access, permission)) {
+    send(request, response, 403, { error: 'Permissão administrativa insuficiente.', code: 'forbidden' });
+    return null;
+  }
+
+  return access;
 }
 
 async function findOwnedAttempt(attemptId, ownerId) {
@@ -264,6 +280,205 @@ async function handle(request, response) {
   if (request.method === 'POST' && path === '/api/auth/logout') {
     await deleteSession(session.token);
     send(request, response, 200, { ok: true });
+    return;
+  }
+
+  if (request.method === 'GET' && path === '/api/admin/me') {
+    if (!session.userId) {
+      send(request, response, 401, { error: 'Usuário não autenticado.', code: 'unauthorized' });
+      return;
+    }
+
+    const access = await getUserAccess(session.userId);
+    if (access.permissions.length === 0) {
+      send(request, response, 403, { error: 'Acesso administrativo não autorizado.', code: 'forbidden' });
+      return;
+    }
+
+    send(request, response, 200, access);
+    return;
+  }
+
+  if (request.method === 'GET' && path === '/api/admin/dashboard') {
+    if (!(await requirePermission(request, response, session, 'admin.dashboard'))) {
+      return;
+    }
+    send(request, response, 200, await getAdminDashboard());
+    return;
+  }
+
+  if (request.method === 'GET' && path === '/api/admin/users') {
+    if (!(await requirePermission(request, response, session, 'admin.users.read'))) {
+      return;
+    }
+    send(request, response, 200, await listUsers({
+      search: url.searchParams.get('search') ?? '',
+      status: url.searchParams.get('status') ?? '',
+      role: url.searchParams.get('role') ?? '',
+      page: url.searchParams.get('page') ?? 1,
+      limit: url.searchParams.get('limit') ?? 20
+    }));
+    return;
+  }
+
+  if (request.method === 'GET' && parts[1] === 'admin' && parts[2] === 'users' && parts[3] && parts.length === 4) {
+    if (!(await requirePermission(request, response, session, 'admin.users.read'))) {
+      return;
+    }
+    const detail = await getUserDetail(parts[3]);
+    if (!detail) {
+      send(request, response, 404, { error: 'Usuário não encontrado.', code: 'not-found' });
+      return;
+    }
+    send(request, response, 200, detail);
+    return;
+  }
+
+  if (request.method === 'POST' && parts[1] === 'admin' && parts[2] === 'users' && parts[3] && parts[4] === 'email') {
+    if (!(await requirePermission(request, response, session, 'admin.users.write'))) {
+      return;
+    }
+    const body = await readJson(request);
+    const emailValidation = validateEmail(body?.email);
+    if (!emailValidation.valid) {
+      send(request, response, 400, { error: emailValidation.error, code: 'invalid-email' });
+      return;
+    }
+    try {
+      const before = await pool.query('select id, email from public.users where id = ', [parts[3]]);
+      if (!before.rows[0]) {
+        send(request, response, 404, { error: 'Usuário não encontrado.', code: 'not-found' });
+        return;
+      }
+      const updated = await pool.query(
+        'update public.users set email = , email_normalized = , updated_at = now() where id =  returning id, email',
+        [normalizeEmail(body.email), normalizeEmail(body.email), parts[3]]
+      );
+      await writeAudit({
+        actorUserId: session.userId,
+        action: 'user.email.update',
+        entityType: 'user',
+        entityId: parts[3],
+        beforeData: before.rows[0],
+        afterData: updated.rows[0],
+        reason: normalizeBio(body?.reason)
+      });
+      send(request, response, 200, { user: updated.rows[0] });
+    } catch (error) {
+      if (error.code === '23505') {
+        send(request, response, 409, { error: 'Este e-mail já está cadastrado.', code: 'email-in-use' });
+        return;
+      }
+      throw error;
+    }
+    return;
+  }
+
+  if (
+    request.method === 'POST' &&
+    parts[1] === 'admin' &&
+    parts[2] === 'users' &&
+    parts[3] &&
+    ['block', 'unblock'].includes(parts[4])
+  ) {
+    if (!(await requirePermission(request, response, session, 'admin.users.block'))) {
+      return;
+    }
+    const body = await readJson(request);
+    const result = await updateUserStatus({
+      actorUserId: session.userId,
+      userId: parts[3],
+      status: parts[4] === 'block' ? 'disabled' : 'active',
+      reason: normalizeBio(body?.reason)
+    });
+    if (!result.updated) {
+      const status = result.error === 'last-admin' ? 409 : 404;
+      send(request, response, status, {
+        error: result.error === 'last-admin'
+          ? 'O último administrador ativo não pode ser bloqueado.'
+          : 'Usuário não encontrado.',
+        code: result.error
+      });
+      return;
+    }
+    send(request, response, 200, { user: result.user });
+    return;
+  }
+
+  if (request.method === 'POST' && parts[1] === 'admin' && parts[2] === 'users' && parts[3] && parts[4] === 'password-reset') {
+    if (!(await requirePermission(request, response, session, 'admin.users.password'))) {
+      return;
+    }
+    await writeAudit({
+      actorUserId: session.userId,
+      action: 'user.password.reset-requested',
+      entityType: 'user',
+      entityId: parts[3],
+      reason: normalizeBio((await readJson(request))?.reason),
+      result: 'failure'
+    });
+    send(request, response, 501, {
+      error: 'A recuperação de senha local exige serviço de e-mail. Use o Supabase Auth no cloud.',
+      code: 'recovery-unavailable'
+    });
+    return;
+  }
+
+  if (request.method === 'POST' && parts[1] === 'admin' && parts[2] === 'users' && parts[3] && parts[4] === 'roles') {
+    if (!(await requirePermission(request, response, session, 'admin.users.roles'))) {
+      return;
+    }
+    const body = await readJson(request);
+    const result = await replaceUserRoles({
+      actorUserId: session.userId,
+      userId: parts[3],
+      roleIds: body?.roleIds
+    });
+    if (!result.updated) {
+      send(request, response, result.error === 'last-admin' ? 409 : 404, {
+        error: result.error === 'last-admin'
+          ? 'O último administrador ativo não pode perder o papel.'
+          : 'Usuário não encontrado.',
+        code: result.error
+      });
+      return;
+    }
+    send(request, response, 200, { roles: result.roles });
+    return;
+  }
+
+  if (request.method === 'GET' && path === '/api/admin/audit') {
+    if (!(await requirePermission(request, response, session, 'admin.audit.read'))) {
+      return;
+    }
+    send(request, response, 200, await listAudit({
+      page: url.searchParams.get('page') ?? 1,
+      limit: url.searchParams.get('limit') ?? 30,
+      action: url.searchParams.get('action') ?? '',
+      entityType: url.searchParams.get('entityType') ?? '',
+      actor: url.searchParams.get('actor') ?? ''
+    }));
+    return;
+  }
+
+  if (request.method === 'GET' && path === '/api/admin/settings') {
+    if (!(await requirePermission(request, response, session, 'admin.settings.read'))) {
+      return;
+    }
+    send(request, response, 200, await getAdminSettings());
+    return;
+  }
+
+  if (request.method === 'PUT' && path === '/api/admin/settings') {
+    if (!(await requirePermission(request, response, session, 'admin.settings.write'))) {
+      return;
+    }
+    const body = await readJson(request);
+    send(request, response, 200, await updateAdminSettings({
+      actorUserId: session.userId,
+      settings: body?.settings ?? {},
+      flags: body?.flags ?? {}
+    }));
     return;
   }
 
@@ -716,6 +931,10 @@ async function start() {
   await migrate();
   const seed = await seedContent();
   console.log(`Conteúdo inicial: ${seed.seeded ? 'populado' : 'já existente'}`);
+  const admin = await bootstrapAdmin();
+  if (admin.user) {
+    console.log(`Administrador inicial: ${admin.user.email}${admin.created ? ' (criado)' : ' (papel garantido)'}`);
+  }
   server.listen(PORT, '0.0.0.0', () => {
     console.log(`normaliza-api ouvindo na porta ${PORT}`);
   });

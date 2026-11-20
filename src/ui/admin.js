@@ -20,17 +20,17 @@ export function renderAdminPage(root, {
   onOpenWorldAdmin
 }) {
   renderPage(root, {
-    title: 'Administração',
+    title: 'Catálogos',
     eyebrow: 'Cafegeek — Governança de conteúdo',
     player,
     onBack,
     children: el('div', { class: 'admin-page' }, [
       el('div', { class: 'admin-warning', role: 'note' }, [
-        el('strong', {}, 'Modo administrativo local'),
+        el('strong', {}, 'Catálogos locais'),
         el(
           'p',
           {},
-          'Esta área usa a persistência local do navegador. A autorização administrativa de produção será conectada ao backend na etapa de segurança.'
+          'Arquétipos, atributos e imagens usam a persistência local do navegador. Usuários, permissões e auditoria são administrados pelo backend.'
         )
       ]),
       notice ? el('p', { class: 'form-success', role: 'status' }, notice) : null,

@@ -14,7 +14,8 @@ export function createInitialState(city = null) {
     activeMissionId: null,
     activeTerritoryId: null,
     activeTrackId: null,
-    activeQuestId: null
+    activeQuestId: null,
+    activeAdminUserId: null
   };
 }
 
@@ -58,7 +59,7 @@ export function startPhase(state, phaseId) {
 }
 
 export function goToPage(state, screen) {
-  if (!['profile', 'character', 'ranking', 'achievements', 'about', 'challenges', 'admin', 'adminWorld', 'knowledge', 'worldMap', 'skills', 'specializations', 'login', 'register', 'recover', 'onboarding', 'journey'].includes(screen)) {
+  if (!['profile', 'character', 'ranking', 'achievements', 'about', 'challenges', 'admin', 'adminWorld', 'adminUsers', 'adminPlayers', 'adminContent', 'adminSettings', 'adminAudit', 'knowledge', 'worldMap', 'skills', 'specializations', 'login', 'register', 'recover', 'onboarding', 'journey'].includes(screen)) {
     return state;
   }
 
@@ -70,7 +71,8 @@ export function goToPage(state, screen) {
     activeMissionId: null,
     activeTerritoryId: null,
     activeTrackId: null,
-    activeQuestId: null
+    activeQuestId: null,
+    activeAdminUserId: null
   };
 }
 
@@ -96,6 +98,17 @@ export function openTrack(state, trackId) {
     activeMissionId: null,
     activeTrackId: trackId,
     activeQuestId: null
+  };
+}
+
+export function openAdminUser(state, userId) {
+  return {
+    ...state,
+    screen: 'adminUser',
+    selectedBuildingId: null,
+    activePhaseId: null,
+    activeMissionId: null,
+    activeAdminUserId: userId
   };
 }
 
@@ -176,8 +189,12 @@ export function applyRoute(state, route) {
     return goToMenu(state);
   }
 
-  if (['profile', 'character', 'ranking', 'achievements', 'about', 'challenges', 'admin', 'adminWorld', 'knowledge', 'worldMap', 'skills', 'specializations', 'login', 'register', 'recover', 'onboarding', 'journey'].includes(route.screen)) {
+  if (['profile', 'character', 'ranking', 'achievements', 'about', 'challenges', 'admin', 'adminWorld', 'adminUsers', 'adminPlayers', 'adminContent', 'adminSettings', 'adminAudit', 'knowledge', 'worldMap', 'skills', 'specializations', 'login', 'register', 'recover', 'onboarding', 'journey'].includes(route.screen)) {
     return goToPage(state, route.screen);
+  }
+
+  if (route.screen === 'adminUser' && route.userId) {
+    return openAdminUser(state, route.userId);
   }
 
   if (route.screen === 'territory' && route.territoryId) {

@@ -62,7 +62,7 @@
       const doc = frame.contentDocument;
       await waitFor(() => doc.documentElement.dataset.appReady === 'true' && doc.querySelector('.admin-page'), 'administração');
 
-      check('administração avisa sobre proteção local', doc.querySelector('.admin-warning').textContent.includes('autorização administrativa'));
+      check('administração avisa sobre catálogos locais', doc.querySelector('.admin-warning').textContent.includes('persistência local'));
       check('catálogo tem três arquétipos', doc.querySelectorAll('.admin-section')[0].querySelectorAll('.admin-form:not(.admin-form--new)').length === 3);
       check('catálogo tem quatro atributos', doc.querySelectorAll('.admin-section')[1].querySelectorAll('.admin-form:not(.admin-form--new)').length === 4);
       check('matriz começa com doze valores', doc.querySelectorAll('.admin-value').length === 12);

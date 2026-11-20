@@ -11,7 +11,8 @@ Jogo educativo de normalização de bancos de dados. A cidade isométrica é o m
 - Separação explícita entre identidade de autenticação (User) e identidade gamificada (Player).
 - Autenticação local com e-mail/senha, hash `scrypt`, sessões no PostgreSQL e logout; Supabase Auth preparado para o cloud.
 - Tela inicial própria, com logo original em `assets/images/branding/cafegeek-logo.webp`.
-- Navegação para jornada, desafios, ranking e conquistas.
+- Área privada em tela cheia com identidade RPG, personagem central e painéis laterais conectados aos dados reais.
+- Menu superior na ordem Personagens, Mapa do Mundo, Desafios, Missões, Talentos e Configurações.
 - Apresentação da Quest 01 — NORMALIZA!.
 - Criação e edição de personagem com nome, retrato e arquétipo inicial.
 - Arquétipos iniciais Engenheiro, Arquiteto e Analista.
@@ -24,8 +25,9 @@ Jogo educativo de normalização de bancos de dados. A cidade isométrica é o m
 - NORMALIZA! posicionado na trilha Modelagem e Normalização do território Dados e Banco de Dados.
 - Tela de habilidades em `#/habilidades`, com níveis, histórico e atividades por competência.
 - Área Minha Especialização em `#/especializacoes` e no perfil, com afinidade calculada por habilidades.
-- Administração local de perfis, arquétipos, atributos, valores iniciais e imagens de personagem.
-- Administração local do mapa em `#/admin/mundo`: territórios, trilhas, habilidades, especializações, quests e relações.
+- Painel administrativo autenticado em `#/admin`, com RBAC, dashboard, usuários, jogadores, auditoria e configurações.
+- Catálogos locais de perfis, arquétipos, atributos, valores iniciais e imagens de personagem em `#/admin/cadastros`.
+- Administração do mapa em `#/admin/mapas` (`#/admin/mundo` como alias): territórios, trilhas, habilidades, especializações, quests e relações, persistidas no PostgreSQL.
 - XP, níveis, progresso para o próximo nível e histórico de evolução.
 - Atributos individuais que evoluem com recompensas de quests, limitados a 10.
 - Conquistas de personagem e histórico recente de XP/atributos.
@@ -72,13 +74,19 @@ Cada resposta incorreta traz explicação conceitual. O jogo oferece dicas, glos
 - **`src/persistence/`**: progresso e personagens por jogador, catálogo local, quests, progressão de personagem, fila, cache e migração do legado.
 - **`src/services/content-service.js`**: leitura e gravação do catálogo no PostgreSQL via `/api/content`.
 - **`src/services/auth-service.js`**: registro, login, logout, recuperação e vínculo User/Player nos providers local e Supabase.
+- **`src/services/admin-service.js`**: acesso administrativo, dashboard, usuários, auditoria e configurações via `/api/admin`.
 - **`src/ui/publicHome.js`** e **`src/ui/auth.js`**: página pública, login, cadastro e onboarding do jogador.
+- **`src/ui/playerLayout.js`**: shell de tela cheia, menu RPG e moldura das páginas privadas.
+- **`src/ui/playerHome.js`**: tela de personagem com retrato central, status, talentos, conquistas, territórios e missão.
+- **`assets/css/player-ui.css`**: identidade visual RPG, composição em três colunas e responsividade.
+- **`src/ui/adminPanel.js`**: shell e telas do painel administrativo autenticado.
+- **`docker/api/src/admin.js`**: RBAC, bootstrap do primeiro administrador, usuários, auditoria e settings.
 - **`docker/api/src/content.js`**: seed e persistência das tabelas de conteúdo.
 - **`src/core/world.js`**: progresso de territórios/trilhas, vínculos quest-habilidade e afinidade de especializações.
 - **`src/persistence/worldStorage.js`**: cache/fallback local versionado do mapa-múndi.
 - **`src/ui/worldMap.js`**: mapa interativo, territórios, trilhas e detalhe de quest.
 - **`src/ui/skills.js`** e **`src/ui/specializations.js`**: habilidades e afinidade profissional.
-- **`src/ui/worldAdmin.js`**: administração local de territórios, trilhas, habilidades, especializações e quests.
+- **`src/ui/worldAdmin.js`**: administração de territórios, trilhas, habilidades, especializações e quests, com persistência no PostgreSQL e cache local.
 - **`src/state/` e `src/router/`**: estado e rotas por hash, incluindo páginas públicas, autenticação, área do jogador, mapa, território, trilha, quest, habilidades e administração.
 - **`src/ui/`**: início Cafegeek, jornada de quests, personagem, administração, cidade, arte isométrica detalhada em `cityArt.js`, HUD, fases, missão, identidade, perfil, ranking, conquistas, Sobre e ajuda.
 - **`data/`**: cidade, fases, missão, glossário, dicas e `content.seed.json` usado para popular o PostgreSQL.
@@ -692,13 +700,13 @@ A aplicação usa caminhos relativos e foi validada em subdiretório. Não alter
 1. **Diagnóstico:** a base era uma SPA estática do NORMALIZA!, com regras puras, persistência por navegador, backend local/Supabase e ranking de fases. A arquitetura foi evoluída sem reimplementar o jogo.
 2. **Modelo conceitual:** jogador, personagem, arquétipo, atributo, campanha, quest, progresso, XP, nível e conquista foram separados.
 3. **Modelo relacional:** o schema atual e o modelo alvo normalizado estão representados nos dois diagramas MER deste README.
-4. **Interfaces:** início Cafegeek, mapa-múndi de cinco territórios, trilhas, detalhe de quest, habilidades, especializações, jornada, desafios, personagem, administração do mapa, perfil, ranking, conquistas, cidade, fases e missão.
-5. **Arquivos principais:** `src/core/quests.js`, `src/core/progression.js`, `src/core/world.js`, `src/core/characters.js`, `src/persistence/questStorage.js`, `src/persistence/progressionStorage.js`, `src/persistence/worldStorage.js`, `src/persistence/imageStorage.js`, `src/ui/worldMap.js`, `src/ui/skills.js`, `src/ui/specializations.js`, `src/ui/worldAdmin.js`, `src/ui/character.js`, `src/ui/challenges.js`, `src/ui/admin.js`, `db/migrations/004_world.sql`, `supabase/functions/complete-quest/`.
-6. **Funcionalidades:** logo original Cafegeek, Quest 01, quatro quests com dependências, personagem editável, catálogo administrável de arquétipos/atributos, imagens de personagem, mapa-múndi com cinco territórios e trilhas, NORMALIZA na trilha Modelagem e Normalização, habilidades com histórico e atividades, especializações com afinidade, administração local de territórios/trilhas/habilidades/especializações/quests, valores 1–10, XP/níveis, evolução de atributos, conquistas e confirmação local server-side da Quest 01.
-7. **Migrations:** `001_core.sql`, `002_local.sql`, `003_platform.sql`, `004_world.sql`, `005_content_order.sql` e `006_auth.sql` foram aplicadas no PostgreSQL local. `001_schema.sql`, `002_platform.sql`, `003_world.sql` e `004_auth.sql` estão preparadas no diretório `supabase/migrations/`, mas ainda não foram aplicadas no projeto cloud.
-8. **Testes:** 188 testes unitários, suítes de interação das fases, jogadores/ranking, administração, missão e progresso, mapa/trilhas/habilidades/especializações e 32 screenshots; verificação do backend local com autenticação, catálogo PostgreSQL, quest incompleta, idempotência e isolamento entre jogadores.
-9. **Limitações:** User/Player e o perfil do jogador já usam autenticação local/PostgreSQL, mas a progressão detalhada e as imagens ainda usam `LocalStorage`; recuperação de senha local não envia e-mail; a autorização administrativa de produção e a persistência server-side de habilidades/progresso continuam pendentes.
-10. **Próximas melhorias:** migrar personagens/habilidades e progressão individual para o banco, aplicar RLS administrativa no Supabase, publicar as Edge Functions, implementar validação genérica de quests e sincronizar recompensas de habilidades no servidor.
+4. **Interfaces:** início Cafegeek, mapa-múndi de cinco territórios, trilhas, detalhe de quest, habilidades, especializações, jornada, desafios, personagem, painel administrativo, administração do mapa, perfil, ranking, conquistas, cidade, fases e missão.
+5. **Arquivos principais:** `src/core/quests.js`, `src/core/progression.js`, `src/core/world.js`, `src/core/characters.js`, `src/persistence/questStorage.js`, `src/persistence/progressionStorage.js`, `src/persistence/worldStorage.js`, `src/persistence/imageStorage.js`, `src/ui/worldMap.js`, `src/ui/skills.js`, `src/ui/specializations.js`, `src/ui/worldAdmin.js`, `src/ui/playerLayout.js`, `src/ui/playerHome.js`, `assets/css/player-ui.css`, `src/ui/adminPanel.js`, `src/services/admin-service.js`, `docker/api/src/admin.js`, `src/ui/character.js`, `src/ui/challenges.js`, `src/ui/admin.js`, `db/migrations/004_world.sql`, `db/migrations/007_admin.sql`, `db/migrations/008_settings.sql`, `supabase/functions/complete-quest/`.
+6. **Funcionalidades:** logo original Cafegeek, Quest 01, quatro quests com dependências, personagem editável, catálogo administrável de arquétipos/atributos, imagens de personagem, mapa-múndi com cinco territórios e trilhas, NORMALIZA na trilha Modelagem e Normalização, habilidades com histórico e atividades, especializações com afinidade, painel administrativo com RBAC/dashboard/usuários/auditoria/configurações, administração de territórios/trilhas/habilidades/especializações/quests, valores 1–10, XP/níveis, evolução de atributos, conquistas e confirmação local server-side da Quest 01.
+7. **Migrations:** `001_core.sql`, `002_local.sql`, `003_platform.sql`, `004_world.sql`, `005_content_order.sql`, `006_auth.sql`, `007_admin.sql` e `008_settings.sql` foram aplicadas no PostgreSQL local. `001_schema.sql`, `002_platform.sql`, `003_world.sql`, `004_auth.sql` e `005_admin.sql` estão preparadas no diretório `supabase/migrations/`, mas ainda não foram aplicadas no projeto cloud.
+8. **Testes:** 191 testes unitários, suítes de interação das fases, jogadores/ranking, administração, missão e progresso, mapa/trilhas/habilidades/especializações e 32 screenshots; verificação do backend local com RBAC administrativo, detalhe de usuário, catálogo PostgreSQL, autenticação, quest incompleta, idempotência e isolamento entre jogadores.
+9. **Limitações:** User/Player e o perfil do jogador já usam autenticação local/PostgreSQL, mas a progressão detalhada e as imagens ainda usam `LocalStorage`; recuperação de senha local não envia e-mail; as Edge Functions administrativas do Supabase e a persistência server-side de habilidades/progresso continuam pendentes.
+10. **Próximas melhorias:** migrar personagens/habilidades e progressão individual para o banco, aplicar as funções administrativas no Supabase, publicar as Edge Functions, implementar validação genérica de quests e sincronizar recompensas de habilidades no servidor.
 
 ## Limitações conhecidas
 
@@ -707,6 +715,11 @@ A aplicação usa caminhos relativos e foi validada em subdiretório. Não alter
 - User/Player, login, cadastro, logout e rotas privadas estão implementados; a progressão individual ainda é local.
 - Jogadores antigos sem `user_id` permanecem como registros legados; a associação a uma nova conta exige um fluxo de reivindicação.
 - Habilidades e especializações possuem telas e cálculo de afinidade; o catálogo do mundo é compartilhado pelo PostgreSQL, mas a progressão individual ainda é local.
+- O painel administrativo autenticado e o RBAC estão implementados no backend local; as funções administrativas equivalentes no Supabase ainda não foram publicadas.
+- As telas de Catálogos e Mapas preservam os editores existentes e podem usar o shell de página legado, com retorno ao painel.
+- A reformulação RPG cobre a tela de personagem e o shell de navegação; Mapa, Desafios, Missões, Talentos e Configurações ainda usam o conteúdo legado dentro do novo shell.
+- `#/missoes` reutiliza temporariamente a página de quests existente; a separação editorial entre Desafios e Missões será feita em uma etapa própria.
+- A seleção de personagens exibe o personagem principal; o modelo local já armazena uma lista, mas a criação/troca de múltiplos personagens ainda não tem fluxo de UI.
 - O Compose local é um backend independente; rankings cloud e local não são mesclados.
 - No modo local, o token de sessão fica no navegador, mas usuários e sessões são validados no PostgreSQL; o progresso detalhado ainda é local.
 - Resultados offline usam política conservadora; tentativas/dicas offline não são verificáveis.

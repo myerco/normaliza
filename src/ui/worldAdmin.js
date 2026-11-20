@@ -26,8 +26,8 @@ export function renderWorldAdminPage(root, {
     onBack,
     children: el('div', { class: 'admin-page admin-world' }, [
       el('div', { class: 'admin-warning', role: 'note' }, [
-        el('strong', {}, 'Administração local de conteúdo'),
-        el('p', {}, 'Estas alterações são persistidas neste navegador. A autorização administrativa real e a publicação no PostgreSQL pertencem à integração server-side.')
+        el('strong', {}, 'Conteúdo do mapa'),
+        el('p', {}, 'As alterações são salvas no PostgreSQL quando o backend está disponível e mantidas como cache local para uso offline.')
       ]),
       notice ? el('p', { class: 'form-success', role: 'status' }, notice) : null,
       worldSection('Territórios', 'Posições, publicação e trilhas de cada território.', [

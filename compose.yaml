@@ -21,6 +21,8 @@ services:
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-normaliza}:${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD no .env}@db:5432/${POSTGRES_DB:-normaliza}
       APP_ORIGIN: ${APP_ORIGIN:-http://localhost:8080}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
       PORT: 3000
     depends_on:
       db:

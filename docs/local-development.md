@@ -77,10 +77,19 @@ O ranking local começa vazio. O catálogo do mapa é semeado no PostgreSQL a pa
   - `POST /api/attempts/:id/validations`
   - `POST /api/results`
   - `GET /api/content`
-  - `PUT /api/content` (autenticado)
+  - `PUT /api/content` (autenticado com `admin.content.write`)
+  - `GET /api/admin/me`
+  - `GET /api/admin/dashboard`
+  - `GET /api/admin/users`
+  - `GET /api/admin/users/:id`
+  - `POST /api/admin/users/:id/block|unblock|roles|password-reset`
+  - `PATCH /api/admin/users/:id/email`
+  - `GET /api/admin/audit`
+  - `GET/PUT /api/admin/settings`
   - `POST /api/quests/normaliza/complete`
   - `GET /api/health`
 - A sessão local é um token opaco por navegador, armazenado no frontend.
+- O primeiro administrador é criado no boot da API a partir de `ADMIN_EMAIL`/`ADMIN_PASSWORD`.
 - Ownership é validado em perfis, tentativas e resultados.
 - A pontuação é recalculada no servidor com as mesmas regras de `_shared`.
 - `client_match_id` impede duplicação.
@@ -118,6 +127,8 @@ O container `web` só recebe configuração pública. A senha do Postgres é usa
 - `db/migrations/004_world.sql`: territórios, trilhas, habilidades, especializações, personagens e views.
 - `db/migrations/005_content_order.sql`: ordem e recompensas adicionais do catálogo de quests.
 - `db/migrations/006_auth.sql`: usuários locais, vínculo `players.user_id`, bio e sessões autenticadas.
+- `db/migrations/007_admin.sql`: roles, permissões, vínculos, auditoria e migração de administradores legados.
+- `db/migrations/008_settings.sql`: configurações e feature flags administrativas.
 - O núcleo é portátil e não referencia `auth.users`.
 - A migration do Supabase cloud permanece separada em `supabase/migrations/`.
 

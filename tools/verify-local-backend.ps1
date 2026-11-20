@@ -1,4 +1,4 @@
-﻿param(
+param(
   [int]$TimeoutSeconds = 60
 )
 
@@ -15,6 +15,9 @@ $otherOwner = $null
 $failed = $false
 $originalContent = $null
 $headers = $null
+$adminEmail = "admintest$((Get-Random -Minimum 1000 -Maximum 9999))@teste.local"
+$adminToken = $null
+$adminHeaders = $null
 $authEmail = "authtest$((Get-Random -Minimum 1000 -Maximum 9999))@teste.local"
 $otherAuthEmail = "authother$((Get-Random -Minimum 1000 -Maximum 9999))@teste.local"
 $authPlayerId = [guid]::NewGuid().ToString()
@@ -42,8 +45,8 @@ function Invoke-ApiStatus {
     }
 
     if ($Body) {
-      $parameters.Body = $Body
-      $parameters.ContentType = 'application/json'
+      $parameters.Body = [Text.Encoding]::UTF8.GetBytes($Body)
+      $parameters.ContentType = 'application/json; charset=utf-8'
     }
 
     $response = Invoke-WebRequest @parameters
@@ -72,8 +75,8 @@ function Invoke-ApiJson {
   }
 
   if ($Body) {
-    $parameters.Body = $Body
-    $parameters.ContentType = 'application/json'
+    $parameters.Body = [Text.Encoding]::UTF8.GetBytes($Body)
+    $parameters.ContentType = 'application/json; charset=utf-8'
   }
 
   return Invoke-RestMethod @parameters
@@ -110,6 +113,31 @@ try {
     Authorization = "Bearer $($session.token)"
   }
 
+  $adminRegistration = Invoke-ApiJson -Uri "$apiBase/auth/register" -Method 'POST' -Body (@{
+    email = $adminEmail
+    password = 'senha12345'
+  } | ConvertTo-Json)
+  $adminToken = $adminRegistration.token
+  $adminHeaders = @{ Authorization = "Bearer $adminToken" }
+  Invoke-Db "insert into public.user_roles (user_id, role_id) values ('$($adminRegistration.user.id)', 'administrator') on conflict do nothing;" | Out-Null
+  $adminAccess = Invoke-ApiJson -Uri "$apiBase/admin/me" -Headers $adminHeaders
+  if (-not ($adminAccess.permissions -contains 'admin.dashboard')) {
+    throw 'Permissões administrativas não foram atribuídas.'
+  }
+  $dashboard = Invoke-ApiJson -Uri "$apiBase/admin/dashboard" -Headers $adminHeaders
+  if ($dashboard.counts.territories -ne 5 -or $dashboard.counts.tracks -ne 48) {
+    throw 'Dashboard administrativo não retornou dados reais do catálogo.'
+  }
+  $adminUsers = Invoke-ApiJson -Uri "$apiBase/admin/users?search=$adminEmail" -Headers $adminHeaders
+  if ($adminUsers.users.Count -lt 1) {
+    throw 'Listagem administrativa de usuários não encontrou a conta de teste.'
+  }
+  $adminDetail = Invoke-ApiJson -Uri "$apiBase/admin/users/$($adminRegistration.user.id)" -Headers $adminHeaders
+  if ($adminDetail.id -ne $adminRegistration.user.id) {
+    throw 'Detalhe administrativo de usuário não retornou a conta solicitada.'
+  }
+  Write-Step 'RBAC administrativo e dashboard: permissões, usuários, detalhe e contagens OK'
+
   $content = Invoke-ApiJson -Uri "$apiBase/content"
   if (
     $content.world.territories.Count -ne 5 -or
@@ -125,12 +153,12 @@ try {
   $modifiedContent = $content | ConvertTo-Json -Depth 30 | ConvertFrom-Json
   $territory = $modifiedContent.world.territories | Where-Object { $_.id -eq 'dados' }
   $territory.name = 'Dados e Banco de Dados DB Test'
-  Invoke-ApiJson -Uri "$apiBase/content" -Method 'PUT' -Headers $headers -Body ($modifiedContent | ConvertTo-Json -Depth 30) | Out-Null
+  Invoke-ApiJson -Uri "$apiBase/content" -Method 'PUT' -Headers $adminHeaders -Body ($modifiedContent | ConvertTo-Json -Depth 30) | Out-Null
   $persisted = Invoke-ApiJson -Uri "$apiBase/content"
   if (($persisted.world.territories | Where-Object { $_.id -eq 'dados' }).name -ne 'Dados e Banco de Dados DB Test') {
     throw 'Conteúdo alterado não foi persistido no PostgreSQL.'
   }
-  Invoke-ApiJson -Uri "$apiBase/content" -Method 'PUT' -Headers $headers -Body $originalContent | Out-Null
+  Invoke-ApiJson -Uri "$apiBase/content" -Method 'PUT' -Headers $adminHeaders -Body $originalContent | Out-Null
   Write-Step 'Conteúdo do mapa no PostgreSQL: 5 territórios, 48 trilhas, 44 habilidades, 12 especializações OK'
 
   $noContentAuth = Invoke-ApiStatus -Uri "$apiBase/content" -Method 'PUT' -Body '{}'
@@ -264,13 +292,13 @@ try {
 } finally {
   if ($originalContent -and $headers) {
     try {
-      Invoke-ApiJson -Uri "$apiBase/content" -Method 'PUT' -Headers $headers -Body $originalContent | Out-Null
+  Invoke-ApiJson -Uri "$apiBase/content" -Method 'PUT' -Headers $adminHeaders -Body $originalContent | Out-Null
     } catch {
       Write-Output 'Aviso: não foi possível restaurar o conteúdo original.'
     }
   }
 
-  foreach ($cleanupEmail in @($authEmail, $otherAuthEmail)) {
+  foreach ($cleanupEmail in @($adminEmail, $authEmail, $otherAuthEmail)) {
     if ($cleanupEmail) {
       $safeEmail = $cleanupEmail.Replace("'", "''")
       Invoke-Db "delete from public.players where user_id in (select id from public.users where email_normalized = lower('$safeEmail')); delete from public.local_sessions where user_id in (select id from public.users where email_normalized = lower('$safeEmail')); delete from public.users where email_normalized = lower('$safeEmail');" | Out-Null
