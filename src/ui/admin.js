@@ -16,7 +16,8 @@ export function renderAdminPage(root, {
   onCreateArchetype,
   onSaveAttribute,
   onCreateAttribute,
-  onSaveValues
+  onSaveValues,
+  onOpenWorldAdmin
 }) {
   renderPage(root, {
     title: 'Administração',
@@ -33,6 +34,16 @@ export function renderAdminPage(root, {
         )
       ]),
       notice ? el('p', { class: 'form-success', role: 'status' }, notice) : null,
+      onOpenWorldAdmin
+        ? el('div', { class: 'admin-world-link' }, [
+            el('button', {
+              class: 'btn btn--cafe',
+              type: 'button',
+              onclick: onOpenWorldAdmin
+            }, 'Administrar mapa do conhecimento'),
+            el('span', { class: 'panel__note' }, 'Territórios, trilhas, habilidades, especializações e quests.')
+          ])
+        : null,
       el('section', { class: 'admin-section' }, [
         el('div', { class: 'platform-section-head' }, [
           el('div', {}, [

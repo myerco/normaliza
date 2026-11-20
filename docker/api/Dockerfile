@@ -8,6 +8,7 @@ RUN npm install --omit=dev
 COPY docker/api/src ./src
 COPY supabase/functions/_shared ./shared
 COPY db/migrations ./migrations
+COPY data/content.seed.json ./data/content.seed.json
 
 ENV NODE_ENV=production
 ENV PORT=3000

@@ -12,6 +12,10 @@ export function loadAuthSession() {
   return readSession();
 }
 
+export function setAuthSession(token, ownerId) {
+  return writeSession({ token, ownerId });
+}
+
 export function clearAuthSession() {
   try {
     globalThis.localStorage?.removeItem(LOCAL_SESSION_KEY);
@@ -58,12 +62,12 @@ export async function ensureAuthSession() {
   };
 }
 
-export async function createRemoteProfile({ playerId, name, avatarId }) {
+export async function createRemoteProfile({ playerId, name, bio = '', avatarId }) {
   const session = await ensureAuthSession();
   const response = await requestJson(apiUrl('/profiles'), {
     method: 'POST',
     headers: authHeaders(session.accessToken),
-    body: JSON.stringify({ playerId, name, avatarId })
+    body: JSON.stringify({ playerId, name, bio, avatarId })
   });
 
   return response?.profile ?? response;

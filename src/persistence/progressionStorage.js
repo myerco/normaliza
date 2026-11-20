@@ -7,7 +7,8 @@ import {
 
 export const PROGRESSION_KEY_PREFIX = 'normaliza:v3:character:';
 const PROGRESSION_SUFFIX = ':progression';
-const VERSION = 1;
+const VERSION = 2;
+const SKILL_MAX_DEFAULT = 10;
 
 export function loadProgression(characterId) {
   if (!characterId) {
@@ -25,10 +26,12 @@ export function loadProgression(characterId) {
     xp: Math.max(0, Math.floor(Number(stored.xp) || 0)),
     level: Math.max(1, Math.floor(Number(stored.level) || 1)),
     attributes: normalizeAttributes(stored.attributes),
+    skills: normalizeSkills(stored.skills),
     xpHistory: Array.isArray(stored.xpHistory) ? stored.xpHistory : [],
     attributeHistory: Array.isArray(stored.attributeHistory)
       ? stored.attributeHistory
       : [],
+    skillHistory: Array.isArray(stored.skillHistory) ? stored.skillHistory : [],
     achievements: Array.isArray(stored.achievements) ? stored.achievements : [],
     updatedAt: stored.updatedAt ?? null
   };
@@ -96,8 +99,10 @@ export function saveProgression(characterId, progression) {
     xp: progression.xp,
     level: progression.level,
     attributes: progression.attributes,
+    skills: progression.skills,
     xpHistory: progression.xpHistory,
     attributeHistory: progression.attributeHistory,
+    skillHistory: progression.skillHistory,
     achievements: progression.achievements,
     updatedAt: progression.updatedAt
   });
@@ -145,6 +150,51 @@ export function applyRewards(progression, rewards, meta = {}) {
   };
 }
 
+export function applySkillRewards(progression, rewards = [], meta = {}, maxLevels = {}) {
+  const now = meta.createdAt ?? new Date().toISOString();
+  const skills = { ...normalizeSkills(progression.skills) };
+  const history = [];
+
+  for (const reward of Array.isArray(rewards) ? rewards : []) {
+    if (!reward?.skillId) {
+      continue;
+    }
+
+    const skillId = reward.skillId;
+    const current = Math.max(0, Number(skills[skillId]?.current ?? 0));
+    const initial = Math.max(0, Number(skills[skillId]?.initial ?? current));
+    const increment = Math.max(0, Math.floor(Number(reward.levelDelta) || 0));
+    const maxLevel = Math.max(1, Number(maxLevels[skillId] ?? SKILL_MAX_DEFAULT));
+    const updated = Math.min(maxLevel, current + increment);
+
+    if (updated === current) {
+      continue;
+    }
+
+    skills[skillId] = { initial, current: updated };
+    history.push({
+      id: `skill-${Date.now()}-${skillId}-${Math.random().toString(16).slice(2)}`,
+      skillId,
+      previous: current,
+      current: updated,
+      source: meta.source ?? 'quest',
+      sourceId: meta.sourceId ?? null,
+      createdAt: now
+    });
+  }
+
+  if (history.length === 0) {
+    return progression;
+  }
+
+  return {
+    ...progression,
+    skills,
+    skillHistory: [...progression.skillHistory, ...history],
+    updatedAt: now
+  };
+}
+
 export function unlockAchievements(progression, completedQuestIds = []) {
   const earned = evaluateProgressionAchievements({
     level: progression.level,
@@ -186,8 +236,10 @@ function emptyProgression() {
     xp: 0,
     level: 1,
     attributes: {},
+    skills: {},
     xpHistory: [],
     attributeHistory: [],
+    skillHistory: [],
     achievements: [],
     updatedAt: null
   };
@@ -207,6 +259,26 @@ function normalizeAttributes(attributes) {
         {
           initial: Math.min(ATTRIBUTE_MAX, Math.max(1, Math.floor(initial) || 1)),
           current: Math.min(ATTRIBUTE_MAX, Math.max(1, Math.floor(current) || 1))
+        }
+      ];
+    })
+  );
+}
+
+function normalizeSkills(skills) {
+  if (!skills || typeof skills !== 'object') {
+    return {};
+  }
+
+  return Object.fromEntries(
+    Object.entries(skills).map(([skillId, value]) => {
+      const initial = Number(value?.initial ?? value ?? 0);
+      const current = Number(value?.current ?? value?.level ?? 0);
+      return [
+        skillId,
+        {
+          initial: Math.max(0, Math.floor(initial) || 0),
+          current: Math.max(0, Math.floor(current) || 0)
         }
       ];
     })

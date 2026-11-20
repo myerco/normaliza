@@ -87,6 +87,45 @@ export function createLocalPlayer({ name, avatarId, bio = '' }) {
   return player;
 }
 
+export function upsertPlayerFromServer(serverPlayer) {
+  if (!serverPlayer?.id) {
+    return null;
+  }
+
+  const registry = loadPlayerRegistry();
+  const index = registry.players.findIndex((player) => player.id === serverPlayer.id);
+  const existing = index >= 0 ? registry.players[index] : null;
+  const now = new Date().toISOString();
+  const player = {
+    ...(existing ?? createPlayerRecord({
+      name: serverPlayer.name,
+      avatarId: serverPlayer.avatarId,
+      bio: serverPlayer.bio ?? ''
+    })),
+    id: serverPlayer.id,
+    name: serverPlayer.name,
+    bio: serverPlayer.bio ?? '',
+    avatarId: serverPlayer.avatarId,
+    createdAt: serverPlayer.createdAt ?? existing?.createdAt ?? now,
+    updatedAt: serverPlayer.updatedAt ?? now,
+    lastActivityAt: serverPlayer.lastActivityAt ?? now,
+    remoteId: serverPlayer.id,
+    remoteOwnerId: serverPlayer.userId ?? serverPlayer.ownerId ?? existing?.remoteOwnerId ?? null,
+    syncStatus: 'synced',
+    needsCharacterSetup: false
+  };
+
+  if (index >= 0) {
+    registry.players[index] = player;
+  } else {
+    registry.players.push(player);
+  }
+
+  registry.activePlayerId = player.id;
+  savePlayerRegistry(registry);
+  return player;
+}
+
 export function updateLocalPlayer(playerId, patch) {
   const registry = loadPlayerRegistry();
   const index = registry.players.findIndex((player) => player.id === playerId);

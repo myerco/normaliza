@@ -81,6 +81,27 @@
       check('tela inicial mostra o jogador', doc.querySelector('.home-player__identity').textContent.includes('Jogador Teste'));
       check('tela inicial tem campanhas futuras', doc.querySelectorAll('.future-card').length === 3);
       check('tela inicial tem menu completo', ['jornada', 'Meu Perfil', 'Ranking', 'Conquistas', 'Glossário', 'Sobre o jogo', 'Consultar desafios'].every((label) => doc.querySelector('.home-menu').textContent.includes(label)));
+      check('tela inicial exibe o mapa do mundo', doc.querySelectorAll('.world-territory').length === 5);
+      check('mapa inicia no território de dados', doc.querySelector('.world-detail')?.textContent.includes('Dados e Banco de Dados'));
+
+      doc.querySelector('.world-territory[data-territory-id="jogos"]').click();
+      await waitFor(
+        () => doc.querySelector('.world-detail')?.textContent.includes('Desenvolvimento de Jogos'),
+        'detalhe do território de jogos'
+      );
+      check('seleção de território atualiza o detalhe', doc.querySelector('.world-detail').textContent.includes('Trilhas'));
+
+      win.location.hash = '#/trilha/modelagem-normalizacao';
+      await waitFor(() => doc.querySelector('.world-track-page'), 'página da trilha');
+      check('trilha posiciona a Quest 01', doc.querySelector('.world-quest-row[data-quest-id="normaliza"]')?.textContent.includes('NORMALIZA'));
+      check('trilha lista habilidades', doc.querySelectorAll('.world-track-skills .world-skill-tag').length >= 2);
+
+      win.location.hash = '#/mapa';
+      await waitFor(() => doc.querySelector('.world-map-page'), 'página do mapa');
+      check('página do mapa tem os cinco territórios', doc.querySelectorAll('.world-map-page .world-territory').length === 5);
+
+      win.location.hash = '#/';
+      await waitFor(() => doc.querySelector('.home-menu'), 'retorno ao início');
 
       const challengesButton = [...doc.querySelectorAll('.home-menu__btn')].find((button) =>
         button.textContent.includes('Consultar desafios')

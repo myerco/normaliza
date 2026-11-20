@@ -5,6 +5,7 @@ import {
 } from '../core/players.js';
 import { getArchetype } from '../core/archetypes.js';
 import { formatLastActivity } from '../core/profile.js';
+import { professionAffinities } from '../core/world.js';
 import { avatarNode, createAvatarPicker } from './avatar.js';
 import { el } from './dom.js';
 import { renderPage } from './page.js';
@@ -13,6 +14,8 @@ export function renderProfilePage(root, {
   player,
   character = null,
   catalog = null,
+  world = null,
+  progression = null,
   summary,
   achievements = [],
   history = [],
@@ -22,6 +25,8 @@ export function renderProfilePage(root, {
   onSave,
   onOpenCharacter,
   onOpenAdmin,
+  onOpenSkills,
+  onOpenSpecializations,
   onSwitch,
   onOpenRanking
 }) {
@@ -90,6 +95,7 @@ export function renderProfilePage(root, {
     ? catalog?.archetypes?.find((item) => item.id === character.archetypeId) ??
       getArchetype(character.archetypeId)
     : null;
+  const affinities = world ? professionAffinities(world, progression).slice(0, 3) : [];
 
   renderPage(root, {
     title: 'Meu Perfil',
@@ -147,6 +153,16 @@ export function renderProfilePage(root, {
           ),
           el(
             'button',
+            { class: 'btn btn--ghost', type: 'button', onclick: onOpenSkills },
+            'Ver habilidades'
+          ),
+          el(
+            'button',
+            { class: 'btn btn--ghost', type: 'button', onclick: onOpenSpecializations },
+            'Minha especialização'
+          ),
+          el(
+            'button',
             { class: 'btn btn--ghost btn--small', type: 'button', onclick: onOpenAdmin },
             'Administração local'
           )
@@ -155,6 +171,38 @@ export function renderProfilePage(root, {
       el('div', {}, [
         notice ? el('p', { class: 'form-success', role: 'status' }, notice) : null,
         form,
+        el('section', { class: 'profile-learning' }, [
+          el('div', { class: 'platform-section-head' }, [
+            el('div', {}, [
+              el('p', { class: 'panel__phase-label' }, 'Trajetória'),
+              el('h2', {}, 'Minha Especialização')
+            ]),
+            onOpenSpecializations
+              ? el('button', {
+                  class: 'btn btn--ghost btn--small',
+                  type: 'button',
+                  onclick: onOpenSpecializations
+                }, 'Ver todas')
+              : null
+          ]),
+          affinities.length > 0
+            ? el('div', { class: 'profile-affinity-list' }, affinities.map((item) =>
+                el('div', { class: `profile-affinity${item.suggested ? ' is-suggested' : ''}` }, [
+                  el('div', { class: 'profile-affinity__head' }, [
+                    el('strong', {}, item.name),
+                    el('span', {}, `${item.score}%`)
+                  ]),
+                  el('span', { class: 'specialization-affinity' }, [
+                    el('span', {
+                      class: 'specialization-affinity__fill',
+                      style: `width:${Math.min(100, item.score)}%`
+                    })
+                  ]),
+                  el('small', {}, item.skills.slice(0, 3).map((skill) => skill.name).join(' · '))
+                ])
+              ))
+            : el('p', { class: 'panel__note' }, 'Conclua quests para desenvolver habilidades e revelar afinidades.')
+        ]),
         el('section', { class: 'profile-achievements' }, [
           el('h2', {}, 'Conquistas'),
           el(

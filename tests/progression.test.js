@@ -7,6 +7,7 @@ import {
 import { createLocalPlayer } from '../src/persistence/playerStorage.js';
 import { ensurePrimaryCharacter } from '../src/persistence/characterStorage.js';
 import { loadCatalog } from '../src/persistence/catalogStorage.js';
+import { loadWorldCatalog } from '../src/persistence/worldStorage.js';
 import {
   QUEST_CATALOG_KEY,
   loadQuestCatalog,
@@ -66,6 +67,7 @@ test('conclusão de quest concede XP, sobe nível e evolui atributos uma única 
   const player = createLocalPlayer({ name: 'Progresso', avatarId: 'engenheiro' });
   const character = ensurePrimaryCharacter(player);
   const catalog = loadCatalog();
+  const world = loadWorldCatalog();
   const questCatalog = loadQuestCatalog();
   const quest = questCatalog.quests.find((item) => item.id === 'normaliza');
   const initial = ensureProgression(character, catalog);
@@ -76,7 +78,8 @@ test('conclusão de quest concede XP, sobe nível e evolui atributos uma única 
     character,
     quest,
     score: 360,
-    catalog
+    catalog,
+    world
   });
   const progression = loadProgression(character.id);
   const questProgress = loadQuestProgress(character.id).quests;
@@ -87,6 +90,9 @@ test('conclusão de quest concede XP, sobe nível e evolui atributos uma única 
   assertEqual(progression.level, 2);
   assertEqual(progression.attributes['sql-basico'].current, 6);
   assertEqual(progression.attributes['sql-avancado'].current, 7);
+  assertEqual(progression.skills['normalizacao'].current, 1);
+  assertEqual(progression.skills['modelagem-dados'].current, 1);
+  assert(progression.skillHistory.length >= 2);
   assert(progression.achievements.includes('primeiro-nivel'));
   assert(progression.achievements.includes('normaliza-concluida'));
   assertEqual(progression.xpHistory.length, 1);
@@ -95,7 +101,8 @@ test('conclusão de quest concede XP, sobe nível e evolui atributos uma única 
     character: first.character ?? character,
     quest,
     score: 360,
-    catalog
+    catalog,
+    world
   });
   const after = loadProgression(character.id);
 

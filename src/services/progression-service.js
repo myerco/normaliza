@@ -6,6 +6,7 @@ import {
 import {
   addXp,
   applyRewards,
+  applySkillRewards,
   ensureProgression,
   saveProgression,
   unlockAchievements
@@ -17,6 +18,7 @@ export function awardQuestCompletion({
   quest,
   score = 0,
   catalog = null,
+  world = null,
   now = new Date().toISOString()
 }) {
   if (!character || !quest) {
@@ -59,6 +61,29 @@ export function awardQuestCompletion({
     sourceId: quest.id,
     createdAt: now
   });
+  const skillRewards = (world?.questSkills ?? [])
+    .filter(
+      (link) =>
+        link.questId === quest.id &&
+        !Object.prototype.hasOwnProperty.call(updated.attributes ?? {}, link.skillId)
+    )
+    .map((link) => ({
+      skillId: link.skillId,
+      levelDelta: link.levelDelta
+    }));
+  const maxLevels = Object.fromEntries(
+    (world?.skills ?? []).map((skill) => [skill.id, skill.maxLevel ?? 10])
+  );
+  updated = applySkillRewards(
+    updated,
+    skillRewards,
+    {
+      source: 'quest',
+      sourceId: quest.id,
+      createdAt: now
+    },
+    maxLevels
+  );
   const ids = completedQuestIds(character.id);
   const unlocked = unlockAchievements(updated, ids);
   updated = unlocked.progression;

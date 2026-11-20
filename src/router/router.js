@@ -15,8 +15,75 @@ export function parseRoute(hash = '') {
     sobre: 'about',
     desafios: 'challenges',
     admin: 'admin',
-    arvore: 'knowledge'
+    mapa: 'worldMap',
+    arvore: 'worldMap',
+    habilidades: 'skills',
+    especializacoes: 'specializations'
   };
+
+  if (parts[0] === 'login') {
+    return { screen: 'login', buildingId: null };
+  }
+
+  if (parts[0] === 'registro') {
+    return { screen: 'register', buildingId: null };
+  }
+
+  if (parts[0] === 'recuperar-senha') {
+    return { screen: 'recover', buildingId: null };
+  }
+
+  if (parts[0] === 'onboarding') {
+    return { screen: 'onboarding', buildingId: null };
+  }
+
+  if (parts[0] === 'jogador') {
+    const section = parts[1] ?? null;
+    const privatePages = {
+      perfil: 'profile',
+      mundo: 'worldMap',
+      mapa: 'worldMap',
+      habilidades: 'skills',
+      especializacoes: 'specializations',
+      conquistas: 'achievements',
+      ranking: 'ranking',
+      desafios: 'challenges'
+    };
+
+    if (!section) {
+      return { screen: 'journey', buildingId: null };
+    }
+
+    if (section === 'quest' && parts[2]) {
+      return { screen: 'questDetail', questId: parts[2], buildingId: null };
+    }
+
+    if (privatePages[section]) {
+      return { screen: privatePages[section], buildingId: null };
+    }
+  }
+
+  if (parts[0] === 'admin' && parts[1] === 'mundo') {
+    return { screen: 'adminWorld', buildingId: null };
+  }
+
+  if (parts[0] === 'territorio') {
+    return parts[1]
+      ? { screen: 'territory', territoryId: parts[1], buildingId: null }
+      : { screen: 'worldMap', buildingId: null };
+  }
+
+  if (parts[0] === 'trilha') {
+    return parts[1]
+      ? { screen: 'track', trackId: parts[1], buildingId: null }
+      : { screen: 'worldMap', buildingId: null };
+  }
+
+  if (parts[0] === 'quest') {
+    return parts[1]
+      ? { screen: 'questDetail', questId: parts[1], buildingId: null }
+      : { screen: 'worldMap', buildingId: null };
+  }
 
   if (pages[parts[0]]) {
     return { screen: pages[parts[0]], buildingId: null };
@@ -47,8 +114,28 @@ export function toHash(route) {
     return '#/';
   }
 
+  if (route.screen === 'login') {
+    return '#/login';
+  }
+
+  if (route.screen === 'register') {
+    return '#/registro';
+  }
+
+  if (route.screen === 'recover') {
+    return '#/recuperar-senha';
+  }
+
+  if (route.screen === 'onboarding') {
+    return '#/onboarding';
+  }
+
+  if (route.screen === 'journey') {
+    return '#/jogador';
+  }
+
   if (route.screen === 'profile') {
-    return '#/perfil';
+    return '#/jogador/perfil';
   }
 
   if (route.screen === 'character') {
@@ -75,8 +162,38 @@ export function toHash(route) {
     return '#/admin';
   }
 
-  if (route.screen === 'knowledge') {
-    return '#/arvore';
+  if (route.screen === 'adminWorld') {
+    return '#/admin/mundo';
+  }
+
+  if (route.screen === 'knowledge' || route.screen === 'worldMap') {
+    return '#/mapa';
+  }
+
+  if (route.screen === 'skills') {
+    return '#/habilidades';
+  }
+
+  if (route.screen === 'specializations') {
+    return '#/especializacoes';
+  }
+
+  if (route.screen === 'territory') {
+    return route.territoryId
+      ? `#/territorio/${encodeURIComponent(route.territoryId)}`
+      : '#/mapa';
+  }
+
+  if (route.screen === 'track') {
+    return route.trackId
+      ? `#/trilha/${encodeURIComponent(route.trackId)}`
+      : '#/mapa';
+  }
+
+  if (route.screen === 'questDetail') {
+    return route.questId
+      ? `#/quest/${encodeURIComponent(route.questId)}`
+      : '#/mapa';
   }
 
   if (route.screen === 'mission') {

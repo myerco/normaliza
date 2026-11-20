@@ -16,9 +16,19 @@ Deno.serve(async (request) => {
   try {
     const user = await requireUser(request, supabase);
     const body = await readJson(request);
-    const playerId = body?.playerId;
+    let playerId = body?.playerId;
     const name = body?.name;
     const avatarId = body?.avatarId;
+    const bio = String(body?.bio ?? '').trim().slice(0, 280);
+
+    if (!playerId) {
+      const { data: current } = await supabase
+        .from('players')
+        .select('id')
+        .eq('owner_id', user.id)
+        .maybeSingle();
+      playerId = current?.id;
+    }
 
     if (!isUuid(playerId)) {
       return error('Identificador de jogador inválido.', 400, 'invalid-player');
@@ -44,6 +54,7 @@ Deno.serve(async (request) => {
         name: nameValidation.name,
         name_normalized: nameValidation.nameKey,
         avatar_id: avatarId,
+        bio,
         updated_at: new Date().toISOString()
       })
       .eq('id', playerId)

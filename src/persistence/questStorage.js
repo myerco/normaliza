@@ -332,12 +332,19 @@ function seedQuestCatalog() {
 }
 
 function normalizeQuestRecord(quest) {
+  const status = ['draft', 'published', 'archived'].includes(quest.status)
+    ? quest.status
+    : quest.active === false
+      ? 'archived'
+      : 'published';
+
   return {
     id: String(quest.id ?? ''),
     campaignId: String(quest.campaignId ?? CAMPAIGN_ID),
     slug: String(quest.slug ?? '').trim(),
     name: String(quest.name ?? '').trim(),
     description: String(quest.description ?? '').trim(),
+    objective: String(quest.objective ?? '').trim(),
     category: String(quest.category ?? 'Geral').trim(),
     difficulty: clamp(Number(quest.difficulty), 1, 5, 1),
     order: Math.max(1, Math.floor(Number(quest.order) || 1)),
@@ -348,7 +355,8 @@ function normalizeQuestRecord(quest) {
     imageId: quest.imageId ? String(quest.imageId) : null,
     attributeRewards: normalizeRewards(quest.attributeRewards),
     isOptional: Boolean(quest.isOptional),
-    active: quest.active !== false,
+    status,
+    active: status === 'published',
     createdAt: quest.createdAt ?? new Date().toISOString(),
     updatedAt: quest.updatedAt ?? new Date().toISOString()
   };

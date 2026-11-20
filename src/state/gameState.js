@@ -1,4 +1,4 @@
-﻿export const PHASE = Object.freeze({
+export const PHASE = Object.freeze({
   id: 'fase-1',
   label: 'Fase 1 — Centro de Distribuição'
 });
@@ -11,7 +11,10 @@ export function createInitialState(city = null) {
     screen: 'splash',
     selectedBuildingId: null,
     activePhaseId: null,
-    activeMissionId: null
+    activeMissionId: null,
+    activeTerritoryId: null,
+    activeTrackId: null,
+    activeQuestId: null
   };
 }
 
@@ -21,7 +24,10 @@ export function startGame(state) {
     screen: 'city',
     selectedBuildingId: null,
     activePhaseId: null,
-    activeMissionId: null
+    activeMissionId: null,
+    activeTerritoryId: null,
+    activeTrackId: null,
+    activeQuestId: null
   };
 }
 
@@ -31,7 +37,10 @@ export function goToMenu(state) {
     screen: 'splash',
     selectedBuildingId: null,
     activePhaseId: null,
-    activeMissionId: null
+    activeMissionId: null,
+    activeTerritoryId: null,
+    activeTrackId: null,
+    activeQuestId: null
   };
 }
 
@@ -41,12 +50,15 @@ export function startPhase(state, phaseId) {
     screen: 'phase',
     selectedBuildingId: null,
     activePhaseId: phaseId,
-    activeMissionId: null
+    activeMissionId: null,
+    activeTerritoryId: null,
+    activeTrackId: null,
+    activeQuestId: null
   };
 }
 
 export function goToPage(state, screen) {
-  if (!['profile', 'character', 'ranking', 'achievements', 'about', 'challenges', 'admin', 'knowledge'].includes(screen)) {
+  if (!['profile', 'character', 'ranking', 'achievements', 'about', 'challenges', 'admin', 'adminWorld', 'knowledge', 'worldMap', 'skills', 'specializations', 'login', 'register', 'recover', 'onboarding', 'journey'].includes(screen)) {
     return state;
   }
 
@@ -55,7 +67,46 @@ export function goToPage(state, screen) {
     screen,
     selectedBuildingId: null,
     activePhaseId: null,
-    activeMissionId: null
+    activeMissionId: null,
+    activeTerritoryId: null,
+    activeTrackId: null,
+    activeQuestId: null
+  };
+}
+
+export function openTerritory(state, territoryId) {
+  return {
+    ...state,
+    screen: 'territory',
+    selectedBuildingId: null,
+    activePhaseId: null,
+    activeMissionId: null,
+    activeTerritoryId: territoryId,
+    activeTrackId: null,
+    activeQuestId: null
+  };
+}
+
+export function openTrack(state, trackId) {
+  return {
+    ...state,
+    screen: 'track',
+    selectedBuildingId: null,
+    activePhaseId: null,
+    activeMissionId: null,
+    activeTrackId: trackId,
+    activeQuestId: null
+  };
+}
+
+export function openQuestDetail(state, questId) {
+  return {
+    ...state,
+    screen: 'questDetail',
+    selectedBuildingId: null,
+    activePhaseId: null,
+    activeMissionId: null,
+    activeQuestId: questId
   };
 }
 
@@ -65,7 +116,10 @@ export function startMission(state, missionId) {
     screen: 'mission',
     selectedBuildingId: null,
     activePhaseId: null,
-    activeMissionId: missionId
+    activeMissionId: missionId,
+    activeTerritoryId: null,
+    activeTrackId: null,
+    activeQuestId: null
   };
 }
 
@@ -79,7 +133,10 @@ export function selectBuilding(state, buildingId) {
     screen: 'city',
     selectedBuildingId: buildingId,
     activePhaseId: null,
-    activeMissionId: null
+    activeMissionId: null,
+    activeTerritoryId: null,
+    activeTrackId: null,
+    activeQuestId: null
   };
 }
 
@@ -119,8 +176,20 @@ export function applyRoute(state, route) {
     return goToMenu(state);
   }
 
-  if (['profile', 'character', 'ranking', 'achievements', 'about', 'challenges', 'admin', 'knowledge'].includes(route.screen)) {
+  if (['profile', 'character', 'ranking', 'achievements', 'about', 'challenges', 'admin', 'adminWorld', 'knowledge', 'worldMap', 'skills', 'specializations', 'login', 'register', 'recover', 'onboarding', 'journey'].includes(route.screen)) {
     return goToPage(state, route.screen);
+  }
+
+  if (route.screen === 'territory' && route.territoryId) {
+    return openTerritory(state, route.territoryId);
+  }
+
+  if (route.screen === 'track' && route.trackId) {
+    return openTrack(state, route.trackId);
+  }
+
+  if (route.screen === 'questDetail' && route.questId) {
+    return openQuestDetail(state, route.questId);
   }
 
   if (route.screen === 'mission' && route.missionId) {

@@ -273,12 +273,16 @@ try {
     $demo = "$baseUrl/tools/demo-seed.html"
     $shots = @(
       @{ Name = 'normaliza-inicio.png'; Url = "$baseUrl/"; Size = '1440,1000' },
+      @{ Name = 'normaliza-login.png'; Url = "$baseUrl/index.html#/login"; Size = '1440,1000' },
       @{ Name = 'normaliza-home.png'; Url = "${demo}?rota=home&ranking=1"; Size = '1440,1000' },
       @{ Name = 'normaliza-home-evoluida.png'; Url = "${demo}?rota=home&completo=1"; Size = '1440,1000' },
       @{ Name = 'normaliza-desafios.png'; Url = "${demo}?rota=desafios"; Size = '1440,1000' },
       @{ Name = 'normaliza-arvore.png'; Url = "${demo}?rota=arvore"; Size = '1440,1000' },
+      @{ Name = 'normaliza-habilidades.png'; Url = "${demo}?rota=habilidades"; Size = '1440,1200' },
+      @{ Name = 'normaliza-especializacoes.png'; Url = "${demo}?rota=especializacoes"; Size = '1440,1200' },
       @{ Name = 'normaliza-personagem.png'; Url = "${demo}?rota=personagem"; Size = '1440,1000' },
       @{ Name = 'normaliza-admin.png'; Url = "${demo}?rota=admin"; Size = '1440,1200' },
+      @{ Name = 'normaliza-admin-mundo.png'; Url = "${demo}?rota=admin/mundo"; Size = '1440,1200' },
       @{ Name = 'normaliza-cidade.png'; Url = "${demo}?rota=cidade"; Size = '1440,1000' },
       @{ Name = 'normaliza-cidade-evoluida.png'; Url = "${demo}?rota=cidade&completo=1"; Size = '1440,1000' },
       @{ Name = 'normaliza-pedido.png'; Url = "${demo}?rota=cidade/pedido"; Size = '1440,1000' },

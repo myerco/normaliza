@@ -11,7 +11,7 @@ O escopo atual inclui:
 - Fase 3 — Cidade Organizada (3FN).
 - Fase 4 — Gestão de Funcionários e Pedidos (3FN complementar, com três tabelas e duas FKs).
 - Missão especial — Administração da Cidade (anomalias).
-- Perfis locais, identificação por nome/avatar, ranking assíncrono, conquistas, offline e sincronização.
+- Contas locais, perfis de jogador, ranking assíncrono, conquistas, offline e sincronização.
 
 Formas normais avançadas (BCNF, 4FN, 5FN) não fazem parte do escopo. Não implemente além da 3FN sem uma nova solicitação.
 
@@ -29,11 +29,11 @@ Formas normais avançadas (BCNF, 4FN, 5FN) não fazem parte do escopo. Não impl
 - O frontend local aciona a confirmação após sincronizar os resultados; a Edge Function `complete-quest` e a migration `002_platform.sql` preparam o mesmo fluxo no Supabase.
 - **Etapa 9 implementada:** consolidação de testes de cadastro, edição, progressão, desbloqueio, conclusão, autorização por jogador, idempotência e regressão; `tools/verify-local-backend.ps1` cobre o fluxo real do endpoint local.
 - **Etapa 10 implementada:** `README.md` consolidado com relatório final, modelo MER atual implementado em Mermaid e modelo alvo planejado; `AGENTS.md` atualizado com o estado e as limitações.
-- **Árvore de conhecimento implementada localmente:** áreas Dados, Programação e Unreal Engine, nós conectados, pré-requisitos, vínculos opcionais com atributos e quests, detalhe do nó e status visual.
+- **Árvore de conhecimento legada:** a visualização anterior de áreas Dados, Programação e Unreal Engine foi substituída pelo mapa-múndi; os módulos antigos permanecem apenas como compatibilidade técnica e seus testes.
 - **Administração de perfis e imagens:** a área local agora atualiza perfis de jogador, atributos e o catálogo de imagens de personagem; a imagem pode ser usada no avatar e aceitar URL.
-- A árvore de conhecimento é separada do personagem e das quests: áreas e nós vivem em catálogo próprio e apenas referenciam atributos/quests quando necessário.
+- O mapa de conhecimento é separado do personagem e das quests: territórios, trilhas, habilidades e especializações vivem em catálogo próprio e referenciam quests por vínculos explícitos.
 - Administração de quests/recompensas, persistência server-side dos personagens/atributos e a proteção administrativa de produção continuam pendentes.
-- Perfis locais por navegador, tela de identificação, edição de perfil, ranking, conquistas e páginas Sobre.
+- Contas locais, perfis de jogador, tela de identificação, edição de perfil, ranking, conquistas e páginas Sobre.
 - Progresso persistido por jogador em `LocalStorage`; o progresso antigo em `normaliza:v1:progress` é migrado para o primeiro perfil.
 - Fila local de resultados pendentes e sincronização com Supabase; ranking exibe estado offline quando indisponível.
 - Progresso já concluído no `LocalStorage` é reconciliado automaticamente com o ranking usando `client_match_id` idempotente.
@@ -41,16 +41,28 @@ Formas normais avançadas (BCNF, 4FN, 5FN) não fazem parte do escopo. Não impl
 - **O schema e as Edge Functions ainda não foram aplicados/deployados no projeto Supabase.** O projeto foi validado para URL, publishable key, Anonymous Auth e CORS, mas as migrations pendentes devem ser aplicadas pelo SQL Editor.
 - **Modo local Docker Compose implementado:** PostgreSQL 16, API Node 22 e web nginx, com ranking local iniciado vazio. O app completo roda em `http://localhost:8080`; o banco é interno e não publica porta no host.
 - O frontend tem provedor Supabase e provedor local; o modo é definido em runtime pelo container web ou pelo `config/runtime.js`.
-- Testes atuais: `179` unitários e suítes de interação das fases, jogadores/ranking, administração, missão e progresso.
+- Testes atuais: `188` unitários e suítes de interação das fases, jogadores/ranking, administração, missão, progresso, mapa, habilidades e especializações.
 - `Node`, `Ruby`, `Jekyll` e `Deno` não estão disponíveis no PATH deste ambiente. O Supabase CLI `3.1.0` está instalado em `C:\Users\myerc\AppData\Local\Programs\supabase` e foi adicionado ao PATH do usuário. O Docker Desktop `4.99.0` está instalado, o engine `29.9.3` está em execução e o Docker está no PATH do sistema. Abra um novo terminal para carregar ambos os PATHs. Use Python para servir o app.
+
+- **Mapa-múndi implementado localmente:** a home agora apresenta cinco territórios, mapa interativo, detalhe de território, progresso e acesso a trilhas; `#/mapa` é a rota principal e `#/arvore` permanece como alias. Rotas `#/territorio/:id`, `#/trilha/:id` e `#/quest/:id` foram adicionadas.
+- **Catálogo do mundo:** o PostgreSQL é a fonte online via `GET/PUT /api/content`; `src/persistence/worldStorage.js` mantém cache/fallback em `normaliza:v4:world`. `src/core/world.js` calcula progresso de trilhas/territórios e afinidade de especializações.
+- **NORMALIZA integrado ao mapa:** a Quest 01 aparece na trilha `modelagem-normalizacao`, no território Dados e Banco de Dados, e continua abrindo o módulo `#/cidade` existente.
+- **Schema do mundo criado no banco local:** `db/migrations/004_world.sql` adicionou territórios, trilhas, habilidades, especializações, personagens, progresso de habilidades, quests e views de progresso/afinidade; `005_content_order.sql` completou os campos de quest. A versão Supabase está em `supabase/migrations/003_world.sql`, ainda pendente de aplicação no cloud.
+- **Área pública implementada:** `#/` apresenta o Cafegeek, cinco territórios, como funciona, NORMALIZA e CTAs; `#/login`, `#/registro` e `#/recuperar-senha` são públicas.
+- **Autenticação e User/Player:** o modo local usa `users`, `players.user_id` e sessões vinculadas; o Supabase usa `auth.users`. Rotas privadas exigem sessão e `#/jogador` é a área Minha Jornada.
+- **Conteúdo do mapa no PostgreSQL:** data/content.seed.json popula as tabelas na primeira inicialização da API; GET /api/content fornece o catálogo ao frontend e PUT /api/content persiste alterações autenticadas do admin local. O PostgreSQL é a fonte online; LocalStorage permanece como cache/fallback offline.
+- **Habilidades e especializações implementadas localmente:** `#/habilidades` mostra níveis e histórico; `#/especializacoes` e o perfil calculam afinidade por habilidades, sem classes restritivas.
+- **Administração do mapa implementada:** #/admin/mundo edita territórios, trilhas, habilidades, especializações, quests e relações; no modo Docker, as alterações são salvas no PostgreSQL via API.
+- **Pendências de autenticação:** recuperação de senha local sem e-mail, migração de contas anônimas Supabase, autorização administrativa real e sincronização de progresso/habilidades no servidor.
+- **Pendências da nova plataforma:** persistir personagens/habilidades no servidor, sincronizar recompensas de habilidades, aplicar RLS administrativa no Supabase e implementar validação genérica de quests.
 
 ## Stack
 
 - HTML5, CSS3, JavaScript ES6+ com ES Modules.
 - SVG para cidade/edifícios e JSON para conteúdo.
-- Supabase Postgres, Auth anônimo, RLS, view de leaderboard e Edge Functions.
+- Supabase Postgres, Auth por e-mail/senha, RLS, view de leaderboard e Edge Functions.
 - PostgreSQL 16, Node 22 e nginx no modo Docker Compose local.
-- `LocalStorage` para perfis, progresso, cache de ranking e fila de sincronização.
+- `LocalStorage` para token de sessão, cache de progresso/ranking e fila de sincronização.
 - Sem bundler, framework de frontend ou etapa de build.
 - Configuração pública em `config/supabase.js` e seleção de backend em `config/runtime.js`; nenhuma credencial administrativa no navegador.
 
@@ -81,9 +93,18 @@ Formas normais avançadas (BCNF, 4FN, 5FN) não fazem parte do escopo. Não impl
 
 - **`src/core/`**: regras puras e independentes do DOM — fases 1–4, anomalias, jogadores, personagens, arquétipos, atributos, quests, árvore de conhecimento, XP, níveis, conquistas, perfil, ranking e progresso.
 - **`src/data/`**: validação estrutural dos JSONs de cidade, fases e missão.
-- **`src/services/`**: fachada de backend, provedores Supabase/local, submissão de resultados, progressão de quests, leaderboard e sincronização. Não contém UI.
+- **`src/services/`**: fachada de backend, provedores Supabase/local, conteúdo PostgreSQL, submissão de resultados, progressão de quests, leaderboard e sincronização. Não contém UI.
 - **`src/persistence/`**: progresso e personagens namespaced por jogador, catálogo local de arquétipos/atributos, imagens, quests, árvore de conhecimento, progressão de personagem, fila pendente, cache de ranking e migração do legado.
-- **`src/state/` e `src/router/`**: tela, jogador, edifício, fase e rotas por hash.
+- **`src/core/world.js`**: progresso de territórios/trilhas, vínculos quest-habilidade e cálculo de afinidade de especializações.
+- **`src/persistence/worldStorage.js`**: catálogo local versionado do mapa-múndi, usado como cache/fallback.
+- **`src/services/content-service.js`**: leitura e gravação do catálogo via `/api/content`.
+- **`src/services/auth-service.js`**: autenticação, sessão e vínculo User/Player.
+- **`src/ui/publicHome.js`** e **`src/ui/auth.js`**: página pública, login, cadastro e onboarding.
+- **`docker/api/src/content.js`**: seed e persistência do catálogo no PostgreSQL.
+- **`src/ui/worldMap.js`**: mapa interativo, territórios, trilhas e detalhe de quest.
+- **`src/ui/skills.js`** e **`src/ui/specializations.js`**: habilidades e afinidade profissional.
+- **`src/ui/worldAdmin.js`**: administração local de territórios, trilhas, habilidades, especializações e quests.
+- **`src/state/` e `src/router/`**: tela, jogador, edifício, fase, mapa, território, trilha e rotas por hash.
 - **`src/ui/`**: início Cafegeek, jornada de quests, árvore de conhecimento, personagem, administração, cidade e arte isométrica (`cityArt.js`), HUD, painel, fases, missão, identidade, perfil, ranking, conquistas, Sobre, ajuda e confirmação.
 - **`data/`**: configuração de fases, cidade, missão, glossário e dicas.
 - **`supabase/`**: migrations SQL, Edge Functions e módulos canônicos compartilhados para validação server-side.
@@ -139,9 +160,9 @@ A validação de normalização deve continuar pura. A mesma especificação can
 ## Identidade, perfis e multiplayer
 
 - O multiplayer é assíncrono: cada jogador tem seu progresso; o ranking é compartilhado.
-- Identidade: **Supabase Auth anônimo por navegador**. Um `owner_id` pode ter vários perfis de jogo.
+- Identidade: **Supabase Auth por e-mail/senha**; o modo local usa `users` + `players.user_id`. Um User possui um Player no escopo inicial.
 - Não solicitar nome completo, CPF, e-mail ou telefone.
-- O perfil é vinculado ao navegador; não há login em outro dispositivo nesta versão.
+- A sessão é persistida; o token local fica no navegador, mas usuários e sessões são validados no PostgreSQL. O Supabase permite autenticação em outros dispositivos.
 - Nome: 3–20 caracteres; letras Unicode, números, espaço, hífen e sublinhado; único globalmente e case-insensitive.
 - Avatar: IDs em allowlist (`construtor`, `arquiteto`, `engenheiro`, `analista`, `cientista`).
 - O jogador pode criar, selecionar, editar nome/avatar e trocar de perfil local.
@@ -234,7 +255,7 @@ A validação de normalização deve continuar pura. A mesma especificação can
 ### Supabase cloud/local
 
 - Configuração pública: `config/supabase.js`.
-- Migrações: `supabase/migrations/001_schema.sql` e `002_platform.sql`, aplicadas pelo SQL Editor.
+- Migrações: `supabase/migrations/001_schema.sql`, `002_platform.sql`, `003_world.sql` e `004_auth.sql`, aplicadas pelo SQL Editor; o modo local usa `db/migrations/004_world.sql`, `005_content_order.sql` e `006_auth.sql`.
 - Edge Functions: `create-profile`, `update-profile`, `start-attempt`, `record-hint`, `record-validation`, `submit-solution`, `complete-quest`.
 - `_shared/phase-data.js` e `_shared/fase*.js` são cópias canônicas usadas pelo servidor; devem permanecer sincronizadas com `data/phases/` e `src/core/`.
 - Deploy das funções pelo Dashboard ou Supabase CLI.
@@ -249,8 +270,9 @@ A validação de normalização deve continuar pura. A mesma especificação can
 - O PostgreSQL não publica porta no host; a API é a única camada de acesso.
 - O ranking local começa vazio; não importa automaticamente o ranking do Supabase cloud.
 - A API local usa as mesmas migrations núcleo e a mesma validação compartilhada de fases/pontuação.
+- A API local expõe `GET /api/content` para o catálogo e `PUT /api/content` para a administração autenticada; o seed inicial usa `data/content.seed.json`.
 - A API local expõe `POST /api/quests/normaliza/complete`; a confirmação exige as quatro fases em `phase_results` e grava XP/nível em tabelas `platform_*` com idempotência.
-- A sessão local usa token opaco por navegador; o perfil é criado com o mesmo `playerId` UUID do frontend.
+- A sessão local usa token opaco vinculado a `users`; o jogador é criado com `user_id` e o mesmo `playerId` UUID do frontend.
 - O `web` gera `config/runtime.js` no start do container a partir de `APP_BACKEND`/`LOCAL_API_URL`.
 - `config/runtime.js` e `config/supabase.js` são públicos; a senha do Postgres fica apenas no `.env` local/Compose e nos containers.
 - Consulte `docs/local-development.md`.
@@ -269,7 +291,7 @@ A validação de normalização deve continuar pura. A mesma especificação can
 
 - Schema/Edge Functions ainda não aplicados/deployados no Supabase cloud.
 - O Compose local é um backend alternativo independente do Supabase; rankings cloud e local não são mesclados.
-- Sem login entre dispositivos; perfil é do navegador.
+- No modo local, o token de sessão fica no navegador, mas usuários/sessões são validados no PostgreSQL; progresso detalhado ainda é local.
 - Resultados offline têm política conservadora; tentativas/dicas offline não são verificáveis.
 - Missão especial em memória.
 - Sem BCNF/4FN/5FN.

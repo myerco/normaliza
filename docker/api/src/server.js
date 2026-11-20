@@ -1,11 +1,13 @@
+import crypto from 'node:crypto';
 import http from 'node:http';
 import { URL } from 'node:url';
 import { closePool, migrate, pool } from './db.js';
-import { authenticate, createSession } from './auth.js';
+import { authenticate, createSession, createUser, deleteSession, findUserByEmail, findUserById, recordLogin, validateEmail, validatePassword, verifyPassword } from './auth.js';
 import { PHASE_DATA } from '../shared/phase-data.js';
 import { isValidAvatar, validatePlayerName } from '../shared/players.js';
 import { scoreSolution } from '../shared/score.js';
 import { levelFromXp, xpForQuest } from '../shared/progression.js';
+import { readContent, saveContent, seedContent } from './content.js';
 
 const PORT = Number(process.env.PORT || 3000);
 const allowedOrigins = (process.env.APP_ORIGIN || 'http://localhost:8080')
@@ -24,7 +26,7 @@ function corsHeaders(request) {
   const origin = request.headers.origin;
   const headers = {
     'Access-Control-Allow-Headers': 'authorization, content-type',
-    'Access-Control-Allow-Methods': 'GET, POST, PATCH, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, POST, PATCH, PUT, OPTIONS',
     Vary: 'Origin'
   };
 
@@ -80,6 +82,47 @@ async function findOwnedPlayer(playerId, ownerId) {
   return rows[0] || null;
 }
 
+async function findUserPlayer(userId) {
+  const { rows } = await pool.query(
+    'select * from public.players where user_id = $1 limit 1',
+    [userId]
+  );
+  return rows[0] || null;
+}
+
+function publicUser(row) {
+  return row
+    ? {
+        id: row.id,
+        email: row.email,
+        authProvider: row.auth_provider,
+        status: row.status,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        lastLoginAt: row.last_login_at
+      }
+    : null;
+}
+
+function publicPlayer(row) {
+  return row
+    ? {
+        id: row.id,
+        userId: row.user_id,
+        name: row.name,
+        bio: row.bio ?? '',
+        avatarId: row.avatar_id,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        lastActivityAt: row.last_activity_at
+      }
+    : null;
+}
+
+function normalizeBio(value) {
+  return String(value ?? '').trim().slice(0, 280);
+}
+
 async function findOwnedAttempt(attemptId, ownerId) {
   const { rows } = await pool.query(
     `select a.* from public.phase_attempts a
@@ -106,9 +149,82 @@ async function handle(request, response) {
     return;
   }
 
+  if (request.method === 'GET' && path === '/api/content') {
+    send(request, response, 200, await readContent());
+    return;
+  }
+
   if (request.method === 'POST' && path === '/api/session') {
     const session = await createSession();
     send(request, response, 201, session);
+    return;
+  }
+
+  if (request.method === 'POST' && path === '/api/auth/register') {
+    const body = await readJson(request);
+    const emailValidation = validateEmail(body?.email);
+    const passwordValidation = validatePassword(body?.password);
+
+    if (!emailValidation.valid || !passwordValidation.valid) {
+      send(request, response, 400, {
+        error: emailValidation.error || passwordValidation.error,
+        code: 'invalid-credentials'
+      });
+      return;
+    }
+
+    try {
+      const user = await createUser({
+        email: emailValidation.email,
+        password: body.password
+      });
+      const session = await createSession(user.id);
+      send(request, response, 201, {
+        user: publicUser(user),
+        token: session.token,
+        ownerId: session.ownerId
+      });
+    } catch (error) {
+      if (error.code === '23505') {
+        send(request, response, 409, {
+          error: 'Este e-mail já está cadastrado.',
+          code: 'email-in-use'
+        });
+        return;
+      }
+      throw error;
+    }
+    return;
+  }
+
+  if (request.method === 'POST' && path === '/api/auth/login') {
+    const body = await readJson(request);
+    const user = await findUserByEmail(body?.email);
+    const passwordOk = user ? await verifyPassword(body?.password, user.password_hash) : false;
+
+    if (!user || user.status !== 'active' || !passwordOk) {
+      send(request, response, 401, {
+        error: 'E-mail ou senha inválidos.',
+        code: 'invalid-login'
+      });
+      return;
+    }
+
+    await recordLogin(user.id);
+    const session = await createSession(user.id);
+    send(request, response, 200, {
+      user: publicUser(user),
+      token: session.token,
+      ownerId: session.ownerId
+    });
+    return;
+  }
+
+  if (request.method === 'POST' && path === '/api/auth/recover') {
+    send(request, response, 501, {
+      error: 'Recuperação de senha não está disponível no modo local.',
+      code: 'recovery-unavailable'
+    });
     return;
   }
 
@@ -129,11 +245,194 @@ async function handle(request, response) {
     return;
   }
 
+  if (request.method === 'GET' && path === '/api/auth/me') {
+    if (!session.userId) {
+      send(request, response, 401, { error: 'Usuário não autenticado.', code: 'unauthorized' });
+      return;
+    }
+
+    const user = await findUserById(session.userId);
+    if (!user) {
+      send(request, response, 401, { error: 'Usuário não encontrado.', code: 'unauthorized' });
+      return;
+    }
+
+    send(request, response, 200, { user: publicUser(user) });
+    return;
+  }
+
+  if (request.method === 'POST' && path === '/api/auth/logout') {
+    await deleteSession(session.token);
+    send(request, response, 200, { ok: true });
+    return;
+  }
+
+  if (request.method === 'GET' && path === '/api/players/me') {
+    if (!session.userId) {
+      send(request, response, 401, { error: 'Usuário não autenticado.', code: 'unauthorized' });
+      return;
+    }
+
+    const player = await findUserPlayer(session.userId);
+    if (!player) {
+      send(request, response, 404, { error: 'Jogador ainda não criado.', code: 'player-missing' });
+      return;
+    }
+
+    send(request, response, 200, { player: publicPlayer(player) });
+    return;
+  }
+
+  if (request.method === 'POST' && path === '/api/players/me') {
+    if (!session.userId) {
+      send(request, response, 401, { error: 'Usuário não autenticado.', code: 'unauthorized' });
+      return;
+    }
+
+    const existing = await findUserPlayer(session.userId);
+    if (existing) {
+      send(request, response, 200, { player: publicPlayer(existing), created: false });
+      return;
+    }
+
+    const body = await readJson(request);
+    const nameValidation = validatePlayerName(body?.name);
+    const playerId = UUID.test(String(body?.playerId || ''))
+      ? body.playerId
+      : crypto.randomUUID();
+
+    if (!nameValidation.valid || !isValidAvatar(body?.avatarId)) {
+      send(request, response, 400, {
+        error: nameValidation.errors[0] || 'Avatar inválido.',
+        code: 'invalid-player'
+      });
+      return;
+    }
+
+    const collision = await pool.query('select owner_id, user_id from public.players where id = $1', [
+      playerId
+    ]);
+    if (collision.rows[0] && collision.rows[0].user_id !== session.userId) {
+      send(request, response, 403, {
+        error: 'Este identificador de jogador pertence a outra conta.',
+        code: 'forbidden'
+      });
+      return;
+    }
+
+    try {
+      const { rows } = await pool.query(
+        `insert into public.players
+          (id, owner_id, user_id, name, name_normalized, avatar_id, bio)
+         values ($1, $2, $3, $4, $5, $6, $7)
+         returning *`,
+        [
+          playerId,
+          session.userId,
+          session.userId,
+          nameValidation.name,
+          nameValidation.nameKey,
+          body.avatarId,
+          normalizeBio(body.bio)
+        ]
+      );
+      send(request, response, 201, { player: publicPlayer(rows[0]), created: true });
+    } catch (error) {
+      if (error.code === '23505') {
+        const player = await findUserPlayer(session.userId);
+        if (player) {
+          send(request, response, 200, { player: publicPlayer(player), created: false });
+          return;
+        }
+        send(request, response, 409, {
+          error: 'Este nome já está em uso.',
+          code: 'duplicate-name'
+        });
+        return;
+      }
+      throw error;
+    }
+    return;
+  }
+
+  if (request.method === 'PATCH' && path === '/api/players/me') {
+    if (!session.userId) {
+      send(request, response, 401, { error: 'Usuário não autenticado.', code: 'unauthorized' });
+      return;
+    }
+
+    const player = await findUserPlayer(session.userId);
+    if (!player) {
+      send(request, response, 404, { error: 'Jogador ainda não criado.', code: 'player-missing' });
+      return;
+    }
+
+    const body = await readJson(request);
+    const nameValidation = validatePlayerName(body?.name, { currentName: player.name });
+
+    if (!nameValidation.valid || !isValidAvatar(body?.avatarId)) {
+      send(request, response, 400, {
+        error: nameValidation.errors[0] || 'Avatar inválido.',
+        code: 'invalid-player'
+      });
+      return;
+    }
+
+    try {
+      const { rows } = await pool.query(
+        `update public.players
+         set name = $1, name_normalized = $2, avatar_id = $3, bio = $4, updated_at = now()
+         where id = $5
+         returning *`,
+        [
+          nameValidation.name,
+          nameValidation.nameKey,
+          body.avatarId,
+          normalizeBio(body.bio),
+          player.id
+        ]
+      );
+      send(request, response, 200, { player: publicPlayer(rows[0]) });
+    } catch (error) {
+      if (error.code === '23505') {
+        send(request, response, 409, {
+          error: 'Este nome já está em uso.',
+          code: 'duplicate-name'
+        });
+        return;
+      }
+      throw error;
+    }
+    return;
+  }
+
+  if (request.method === 'PUT' && path === '/api/content') {
+    const body = await readJson(request);
+
+    if (!body?.world || !body?.questCatalog) {
+      send(request, response, 400, { error: 'Conteúdo inválido.', code: 'invalid-content' });
+      return;
+    }
+
+    try {
+      const content = await saveContent(body);
+      send(request, response, 200, content);
+    } catch (error) {
+      console.error(error);
+      send(request, response, 409, {
+        error: 'Não foi possível salvar o conteúdo. Verifique referências e conteúdo em uso.',
+        code: 'content-conflict'
+      });
+    }
+    return;
+  }
+
   if (request.method === 'POST' && path === '/api/profiles') {
     const body = await readJson(request);
     const playerId = body?.playerId;
     const name = body?.name;
     const avatarId = body?.avatarId;
+    const bio = normalizeBio(body?.bio);
 
     if (!UUID.test(String(playerId || ''))) {
       send(request, response, 400, { error: 'Identificador de jogador inválido.', code: 'invalid-player' });
@@ -169,10 +468,10 @@ async function handle(request, response) {
           )
         : await pool.query(
             `insert into public.players
-             (id, owner_id, name, name_normalized, avatar_id)
-             values ($1, $2, $3, $4, $5)
+             (id, owner_id, user_id, name, name_normalized, avatar_id)
+             values ($1, $2, $3, $4, $5, $6)
              returning id, name, avatar_id, created_at, updated_at, last_activity_at`,
-            [playerId, session.ownerId, validation.name, validation.nameKey, avatarId]
+            [playerId, session.ownerId, session.userId, validation.name, validation.nameKey, avatarId]
           );
 
       send(request, response, 200, { profile: result.rows[0] });
@@ -415,6 +714,8 @@ const server = http.createServer((request, response) => {
 
 async function start() {
   await migrate();
+  const seed = await seedContent();
+  console.log(`Conteúdo inicial: ${seed.seeded ? 'populado' : 'já existente'}`);
   server.listen(PORT, '0.0.0.0', () => {
     console.log(`normaliza-api ouvindo na porta ${PORT}`);
   });

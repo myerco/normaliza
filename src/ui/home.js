@@ -8,6 +8,7 @@ import {
 import { formatLastActivity } from '../core/profile.js';
 import { avatarNode, createAvatarPicker } from './avatar.js';
 import { el } from './dom.js';
+import { renderWorldMapSection } from './worldMap.js';
 
 const CAFEGEEK_LOGO = './assets/images/branding/cafegeek-logo.webp';
 
@@ -42,6 +43,11 @@ export function renderHome(root, {
   showIdentity = false,
   hasLegacy = false,
   rankingMessage = '',
+  world = null,
+  questCatalog = null,
+  questProgress = {},
+  isAuthenticatedAccount = false,
+  onLogout,
   onSelectProfile,
   onCreateProfile,
   onShowIdentity,
@@ -52,6 +58,9 @@ export function renderHome(root, {
   onOpenAchievements,
   onOpenChallenges,
   onOpenKnowledge,
+  onOpenTerritory,
+  onOpenTrack,
+  onOpenQuest,
   onOpenHelp,
   onOpenAbout
 }) {
@@ -74,6 +83,16 @@ export function renderHome(root, {
           onSelectProfile
         })
       : el('div', { class: 'platform-dashboard' }, [
+          world
+            ? renderWorldMapSection({
+                world,
+                questCatalog,
+                questProgress,
+                progression,
+                onOpenTerritory,
+                onOpenTrack
+              })
+            : null,
           el('div', { class: 'platform-primary-grid' }, [
             renderPlayerHome({
               player,
@@ -101,6 +120,8 @@ export function renderHome(root, {
             onOpenAchievements,
             onOpenChallenges,
             onOpenKnowledge,
+            isAuthenticatedAccount,
+            onLogout,
             onOpenHelp,
             onOpenAbout
           }),
@@ -152,7 +173,7 @@ function renderPlatformHeader({
               type: 'button',
               onclick: onOpenKnowledge
             },
-            'Árvore'
+            'Mapa'
           ),
           el(
             'button',
@@ -400,6 +421,8 @@ function renderHomeMenu({
   onOpenAchievements,
   onOpenChallenges,
   onOpenKnowledge,
+  isAuthenticatedAccount = false,
+  onLogout,
   onOpenHelp,
   onOpenAbout
 }) {
@@ -422,14 +445,19 @@ function renderHomeMenu({
       hasCharacter ? 'Abrir a ficha do personagem ativo' : 'Escolher nome, imagem e arquétipo',
       onOpenCharacter
     ),
-    menuButton('Trocar jogador', 'Escolher outro perfil deste navegador', onShowIdentity),
+    isAuthenticatedAccount
+      ? null
+      : menuButton('Trocar jogador', 'Escolher outro perfil deste navegador', onShowIdentity),
     menuButton('Meu Perfil', 'Ver e editar seus dados', onOpenProfile),
     menuButton('Consultar desafios', 'Conhecer as quests da plataforma', onOpenChallenges),
-    menuButton('Árvore de conhecimento', 'Explorar habilidades por área', onOpenKnowledge),
+    menuButton('Mapa do conhecimento', 'Explorar territórios, trilhas e habilidades', onOpenKnowledge),
     menuButton('Ranking', 'Classificação dos jogadores', onOpenRanking),
     menuButton('Conquistas', 'Medalhas e resultados', onOpenAchievements),
     menuButton('Glossário', 'Conceitos de normalização', onOpenHelp),
-    menuButton('Sobre o jogo', 'Como o NORMALIZA! funciona', onOpenAbout)
+    menuButton('Sobre o jogo', 'Como o NORMALIZA! funciona', onOpenAbout),
+    isAuthenticatedAccount && onLogout
+      ? menuButton('Sair da conta', 'Encerrar a sessão neste navegador', onLogout)
+      : null
   ]);
 }
 

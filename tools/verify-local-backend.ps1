@@ -13,6 +13,12 @@ $name = "BackendTest$((Get-Random -Minimum 1000 -Maximum 9999))"
 $sessionOwner = $null
 $otherOwner = $null
 $failed = $false
+$originalContent = $null
+$headers = $null
+$authEmail = "authtest$((Get-Random -Minimum 1000 -Maximum 9999))@teste.local"
+$otherAuthEmail = "authother$((Get-Random -Minimum 1000 -Maximum 9999))@teste.local"
+$authPlayerId = [guid]::NewGuid().ToString()
+$authToken = $null
 
 function Write-Step([string]$message) {
   Write-Output $message
@@ -27,7 +33,20 @@ function Invoke-ApiStatus {
   )
 
   try {
-    $response = Invoke-WebRequest -Uri $Uri -Method $Method -Headers $Headers -Body $Body -UseBasicParsing -TimeoutSec 15
+    $parameters = @{
+      Uri = $Uri
+      Method = $Method
+      Headers = $Headers
+      UseBasicParsing = $true
+      TimeoutSec = 15
+    }
+
+    if ($Body) {
+      $parameters.Body = $Body
+      $parameters.ContentType = 'application/json'
+    }
+
+    $response = Invoke-WebRequest @parameters
     return [int]$response.StatusCode
   } catch {
     if ($_.Exception.Response) {
@@ -90,6 +109,89 @@ try {
   $headers = @{
     Authorization = "Bearer $($session.token)"
   }
+
+  $content = Invoke-ApiJson -Uri "$apiBase/content"
+  if (
+    $content.world.territories.Count -ne 5 -or
+    $content.world.tracks.Count -ne 48 -or
+    $content.world.skills.Count -ne 44 -or
+    $content.world.professions.Count -ne 12 -or
+    $content.questCatalog.quests.Count -ne 4
+  ) {
+    throw 'Conteúdo inicial do PostgreSQL inesperado.'
+  }
+
+  $originalContent = $content | ConvertTo-Json -Depth 30
+  $modifiedContent = $content | ConvertTo-Json -Depth 30 | ConvertFrom-Json
+  $territory = $modifiedContent.world.territories | Where-Object { $_.id -eq 'dados' }
+  $territory.name = 'Dados e Banco de Dados DB Test'
+  Invoke-ApiJson -Uri "$apiBase/content" -Method 'PUT' -Headers $headers -Body ($modifiedContent | ConvertTo-Json -Depth 30) | Out-Null
+  $persisted = Invoke-ApiJson -Uri "$apiBase/content"
+  if (($persisted.world.territories | Where-Object { $_.id -eq 'dados' }).name -ne 'Dados e Banco de Dados DB Test') {
+    throw 'Conteúdo alterado não foi persistido no PostgreSQL.'
+  }
+  Invoke-ApiJson -Uri "$apiBase/content" -Method 'PUT' -Headers $headers -Body $originalContent | Out-Null
+  Write-Step 'Conteúdo do mapa no PostgreSQL: 5 territórios, 48 trilhas, 44 habilidades, 12 especializações OK'
+
+  $noContentAuth = Invoke-ApiStatus -Uri "$apiBase/content" -Method 'PUT' -Body '{}'
+  if ($noContentAuth -ne 401) {
+    throw "Esperado 401 ao salvar conteúdo sem autenticação; recebido $noContentAuth."
+  }
+
+  $authRegistration = Invoke-ApiJson -Uri "$apiBase/auth/register" -Method 'POST' -Body (@{
+    email = $authEmail
+    password = 'senha12345'
+  } | ConvertTo-Json)
+  $authToken = $authRegistration.token
+  $authHeaders = @{ Authorization = "Bearer $authToken" }
+
+  $authMe = Invoke-ApiJson -Uri "$apiBase/auth/me" -Headers $authHeaders
+  if ($authMe.user.email -ne $authEmail) {
+    throw 'Usuário autenticado não corresponde ao cadastro.'
+  }
+
+  $authPlayer = Invoke-ApiJson -Uri "$apiBase/players/me" -Method 'POST' -Headers $authHeaders -Body (@{
+    playerId = $authPlayerId
+    name = "Auth Player $((Get-Random -Minimum 1000 -Maximum 9999))"
+    bio = 'Jogador de teste autenticado.'
+    avatarId = 'analista'
+  } | ConvertTo-Json)
+  $authPlayerAgain = Invoke-ApiJson -Uri "$apiBase/players/me" -Method 'POST' -Headers $authHeaders -Body (@{
+    playerId = $authPlayerId
+    name = 'Nome Que Não Deve Sobrescrever'
+    avatarId = 'engenheiro'
+  } | ConvertTo-Json)
+
+  if ($authPlayer.player.id -ne $authPlayerId -or $authPlayerAgain.created -ne $false) {
+    throw 'Criação idempotente do jogador falhou.'
+  }
+
+  $otherAuth = Invoke-ApiJson -Uri "$apiBase/auth/register" -Method 'POST' -Body (@{
+    email = $otherAuthEmail
+    password = 'senha12345'
+  } | ConvertTo-Json)
+  $otherAuthHeaders = @{ Authorization = "Bearer $($otherAuth.token)" }
+  $crossPlayerStatus = Invoke-ApiStatus -Uri "$apiBase/players/me" -Method 'POST' -Headers $otherAuthHeaders -Body (@{
+    playerId = $authPlayerId
+    name = 'Tentativa Cruzada'
+    avatarId = 'analista'
+  } | ConvertTo-Json)
+  if ($crossPlayerStatus -ne 403) {
+    throw "Esperado 403 ao reutilizar jogador de outra conta; recebido $crossPlayerStatus."
+  }
+
+  $login = Invoke-ApiJson -Uri "$apiBase/auth/login" -Method 'POST' -Body (@{
+    email = $authEmail
+    password = 'senha12345'
+  } | ConvertTo-Json)
+  $authToken = $login.token
+  $authHeaders = @{ Authorization = "Bearer $authToken" }
+  Invoke-ApiJson -Uri "$apiBase/auth/logout" -Method 'POST' -Headers $authHeaders | Out-Null
+  $afterLogout = Invoke-ApiStatus -Uri "$apiBase/auth/me" -Headers $authHeaders
+  if ($afterLogout -ne 401) {
+    throw "Esperado 401 após logout; recebido $afterLogout."
+  }
+  Write-Step 'User/Player e autenticação: registro, login, vínculo, 403 e logout OK'
 
   Invoke-ApiJson -Uri "$apiBase/profiles" -Method 'POST' -Headers $headers -Body (@{
     playerId = $playerId
@@ -160,6 +262,21 @@ try {
   $failed = $true
   Write-Output "FALHA: $($_.Exception.Message)"
 } finally {
+  if ($originalContent -and $headers) {
+    try {
+      Invoke-ApiJson -Uri "$apiBase/content" -Method 'PUT' -Headers $headers -Body $originalContent | Out-Null
+    } catch {
+      Write-Output 'Aviso: não foi possível restaurar o conteúdo original.'
+    }
+  }
+
+  foreach ($cleanupEmail in @($authEmail, $otherAuthEmail)) {
+    if ($cleanupEmail) {
+      $safeEmail = $cleanupEmail.Replace("'", "''")
+      Invoke-Db "delete from public.players where user_id in (select id from public.users where email_normalized = lower('$safeEmail')); delete from public.local_sessions where user_id in (select id from public.users where email_normalized = lower('$safeEmail')); delete from public.users where email_normalized = lower('$safeEmail');" | Out-Null
+    }
+  }
+
   if ($playerId) {
     $safePlayer = $playerId.Replace("'", "''")
     Invoke-Db "delete from public.players where id = '$safePlayer';" | Out-Null

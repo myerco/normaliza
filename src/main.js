@@ -33,7 +33,8 @@ import {
   savePendingMatches,
   savePhaseSnapshot,
   setActivePlayer,
-  updateLocalPlayer
+  updateLocalPlayer,
+  upsertPlayerFromServer
 } from './persistence/playerStorage.js';
 import {
   createCharacterForPlayer,
@@ -52,12 +53,29 @@ import {
 import {
   loadQuestCatalog,
   loadQuestProgress,
+  saveQuestCatalog,
   startQuest
 } from './persistence/questStorage.js';
 import { ensureProgression } from './persistence/progressionStorage.js';
 import { loadKnowledgeCatalog } from './persistence/knowledgeStorage.js';
+import { loadWorldCatalog, saveWorldCatalog } from './persistence/worldStorage.js';
 import { loadImageAssets, updateImageAsset } from './persistence/imageStorage.js';
 import { awardQuestCompletion } from './services/progression-service.js';
+import {
+  isDatabaseContentEnabled,
+  loadDatabaseContent,
+  saveDatabaseContent
+} from './services/content-service.js';
+import {
+  createPlayer as createAuthenticatedPlayer,
+  getCurrentUser,
+  getPlayer as getAuthenticatedPlayer,
+  login as loginAccount,
+  logout as logoutAccount,
+  recover as recoverAccount,
+  register as registerAccount,
+  updatePlayer as updateAuthenticatedPlayer
+} from './services/auth-service.js';
 import { questStatusFor } from './core/quests.js';
 import { loadSharedLeaderboard } from './services/leaderboard-service.js';
 import { isOnline, synchronizePlayer, attachSynchronization } from './services/synchronization.js';
@@ -84,10 +102,21 @@ import {
 import { renderHud, updateHudPhase, updateHudScore } from './ui/hud.js';
 import { renderPanel } from './ui/infoPanel.js';
 import { renderHome } from './ui/home.js';
+import { renderPublicHome } from './ui/publicHome.js';
+import { renderAuthPage, renderOnboardingPage } from './ui/auth.js';
 import { renderChallengesPage } from './ui/challenges.js';
 import { renderKnowledgePage } from './ui/knowledge.js';
+import {
+  renderQuestDetailPage,
+  renderTerritoryPage,
+  renderTrackPage,
+  renderWorldMapPage
+} from './ui/worldMap.js';
 import { renderProfilePage } from './ui/profile.js';
+import { renderSkillsPage } from './ui/skills.js';
+import { renderSpecializationsPage } from './ui/specializations.js';
 import { renderAdminPage } from './ui/admin.js';
+import { renderWorldAdminPage } from './ui/worldAdmin.js';
 import { renderCharacterPage } from './ui/character.js';
 import { renderLeaderboardPage } from './ui/leaderboard.js';
 import { renderAchievementsPage } from './ui/achievements.js';
@@ -140,14 +169,19 @@ let phaseDefinitions = [];
 let phaseControllers = new Map();
 let phaseScores = {};
 let activePlayer = null;
+let activeAuthUser = null;
 let activeCharacter = null;
 let activeCatalog = null;
 let activeQuestCatalog = null;
 let activeKnowledge = null;
+let activeWorld = null;
 let activeProgression = null;
 let characterNotice = '';
 let characterError = '';
 let adminNotice = '';
+let authNotice = '';
+let authError = '';
+let authMode = 'login';
 let state = null;
 let currentScreen = null;
 let currentPhaseId = null;
@@ -256,14 +290,32 @@ async function boot() {
   }
 
   activeCatalog = loadCatalog();
-  activeQuestCatalog = loadQuestCatalog();
+  const databaseContent = await loadDatabaseContent();
+
+  if (databaseContent) {
+    activeWorld = saveWorldCatalog(databaseContent.world);
+    activeQuestCatalog = saveQuestCatalog(databaseContent.questCatalog);
+  } else {
+    activeQuestCatalog = loadQuestCatalog();
+    activeWorld = loadWorldCatalog();
+  }
+
   activeKnowledge = loadKnowledgeCatalog();
   state = createInitialState(cityData);
   renderCity(elements.svg, cityData, {
     onSelect: (buildingId) => navigate({ screen: 'city', buildingId })
   });
 
-  activePlayer = getActivePlayer();
+  if (isTestMode()) {
+    activePlayer = getActivePlayer();
+  } else {
+    activeAuthUser = await getCurrentUser();
+
+    if (activeAuthUser) {
+      const serverPlayer = await getAuthenticatedPlayer();
+      activePlayer = serverPlayer ? upsertPlayerFromServer(serverPlayer) : null;
+    }
+  }
 
   if (activePlayer) {
     activeCharacter = activePlayer.needsCharacterSetup
@@ -285,6 +337,14 @@ async function boot() {
   document.addEventListener('keydown', handleGlobalKeydown);
   handleRoute();
   document.documentElement.dataset.appReady = 'true';
+}
+
+function isTestMode() {
+  try {
+    return new URLSearchParams(globalThis.location?.search ?? '').get('test') === '1';
+  } catch {
+    return false;
+  }
 }
 
 function initializePlayerSession() {
@@ -691,6 +751,88 @@ function getAchievements() {
   });
 }
 
+function renderPublicScreen() {
+  renderPublicHome(elements.home, {
+    world: activeWorld,
+    onLogin: () => navigate({ screen: 'login' }),
+    onRegister: () => navigate({ screen: 'register' }),
+    onAbout: () => navigate({ screen: 'about' })
+  });
+}
+
+async function handleAuthSubmit({ mode, email, password }) {
+  authError = '';
+  authNotice = '';
+
+  try {
+    if (mode === 'recover') {
+      await recoverAccount(email);
+      authNotice = 'Se o e-mail estiver cadastrado, as instruções serão enviadas.';
+      render();
+      return;
+    }
+
+    if (mode === 'register') {
+      const result = await registerAccount({ email, password });
+      if (result.needsConfirmation) {
+        authNotice = 'Confirme seu e-mail para concluir o cadastro.';
+        render();
+        return;
+      }
+      activeAuthUser = result.user;
+      window.location.hash = '#/onboarding';
+      window.location.reload();
+      return;
+    }
+
+    const result = await loginAccount({ email, password });
+    activeAuthUser = result.user;
+    const player = await getAuthenticatedPlayer();
+
+    if (player) {
+      upsertPlayerFromServer(player);
+      window.location.hash = consumeReturnTo() ?? '#/jogador';
+    } else {
+      window.location.hash = '#/onboarding';
+    }
+
+    window.location.reload();
+  } catch (error) {
+    authError = error?.message || 'Não foi possível concluir a operação.';
+    render();
+  }
+}
+
+async function handleOnboarding({ name, bio, avatarId }) {
+  authError = '';
+
+  if (!activeAuthUser) {
+    navigate({ screen: 'login' });
+    return;
+  }
+
+  try {
+    const playerId = globalThis.crypto?.randomUUID?.() ?? `player-${Date.now()}`;
+    const player = await createAuthenticatedPlayer({ playerId, name, bio, avatarId });
+    upsertPlayerFromServer(player);
+    window.location.hash = '#/jogador';
+    window.location.reload();
+  } catch (error) {
+    authError = error?.message || 'Não foi possível criar seu jogador.';
+    render();
+  }
+}
+
+async function handleLogout() {
+  await logoutAccount().catch(() => {});
+  activeAuthUser = null;
+  activePlayer = null;
+  activeCharacter = null;
+  activeProgression = null;
+  window.location.hash = '#/';
+  window.location.reload();
+}
+
 function renderHomeScreen() {
   const summary = getProfileSummary();
   const profiles = listLocalPlayers();
@@ -706,6 +848,13 @@ function renderHomeScreen() {
     showIdentity,
     hasLegacy: hasLegacyProgress(),
     rankingMessage,
+    world: activeWorld,
+    questCatalog: activeQuestCatalog,
+    questProgress: activeCharacter
+      ? loadQuestProgress(activeCharacter.id).quests
+      : {},
+    isAuthenticatedAccount: Boolean(activeAuthUser),
+    onLogout: handleLogout,
     onSelectProfile: switchPlayer,
     onCreateProfile: createPlayer,
     onShowIdentity: () => {
@@ -732,7 +881,10 @@ function renderHomeScreen() {
     onOpenRanking: () => navigate({ screen: 'ranking' }),
     onOpenAchievements: () => navigate({ screen: 'achievements' }),
     onOpenChallenges: () => navigate({ screen: 'challenges' }),
-    onOpenKnowledge: () => navigate({ screen: 'knowledge' }),
+    onOpenKnowledge: () => navigate({ screen: 'worldMap' }),
+    onOpenTerritory: (territoryId) => navigate({ screen: 'territory', territoryId }),
+    onOpenTrack: (trackId) => navigate({ screen: 'track', trackId }),
+    onOpenQuest: (questId) => navigate({ screen: 'questDetail', questId }),
     onOpenHelp: () => openHelp({ glossary: glossaryData, tips: tipsData, context: 'general' }),
     onOpenAbout: () => navigate({ screen: 'about' })
   });
@@ -769,10 +921,10 @@ function reloadToHome() {
 }
 
 function renderPageScreen() {
-  if (!activePlayer) {
-    window.history.replaceState(null, '', '#/');
-    state = applyRoute(state, { screen: 'splash', buildingId: null });
-    renderHomeScreen();
+  if (!activePlayer && !['login', 'register', 'recover', 'onboarding', 'about'].includes(state.screen)) {
+    window.history.replaceState(null, '', '#/login');
+    state = applyRoute(state, { screen: 'login', buildingId: null });
+    renderPageScreen();
     return;
   }
 
@@ -780,6 +932,31 @@ function renderPageScreen() {
   const achievements = getAchievements();
 
   switch (state.screen) {
+    case 'login':
+    case 'register':
+    case 'recover':
+      renderAuthPage(elements.pageHost, {
+        mode: state.screen === 'register' ? 'register' : state.screen === 'recover' ? 'recover' : 'login',
+        notice: authNotice,
+        error: authError,
+        onBack: () => navigate({ screen: 'splash' }),
+        onSubmit: handleAuthSubmit,
+        onOpenLogin: () => navigate({ screen: 'login' }),
+        onOpenRegister: () => navigate({ screen: 'register' }),
+        onOpenRecover: () => navigate({ screen: 'recover' })
+      });
+      break;
+
+    case 'onboarding':
+      renderOnboardingPage(elements.pageHost, {
+        user: activeAuthUser,
+        error: authError,
+        onBack: () => navigate({ screen: 'splash' }),
+        onLogout: handleLogout,
+        onSubmit: handleOnboarding
+      });
+      break;
+
     case 'admin':
       renderAdminPage(elements.pageHost, {
         player: activePlayer,
@@ -794,7 +971,19 @@ function renderPageScreen() {
         onCreateArchetype: createAdminArchetype,
         onSaveAttribute: saveAdminAttribute,
         onCreateAttribute: createAdminAttribute,
-        onSaveValues: saveAdminValues
+        onSaveValues: saveAdminValues,
+        onOpenWorldAdmin: () => navigate({ screen: 'adminWorld' })
+      });
+      break;
+
+    case 'adminWorld':
+      renderWorldAdminPage(elements.pageHost, {
+        player: activePlayer,
+        world: activeWorld,
+        questCatalog: activeQuestCatalog,
+        notice: adminNotice,
+        onBack: () => navigate({ screen: 'admin' }),
+        onSaveContent: saveAdminWorldContent
       });
       break;
 
@@ -816,6 +1005,8 @@ function renderPageScreen() {
         player: activePlayer,
         character: activeCharacter,
         catalog: activeCatalog,
+        world: activeWorld,
+        progression: activeProgression,
         summary,
         achievements,
         history: currentProgress().phases,
@@ -826,11 +1017,101 @@ function renderPageScreen() {
         onSave: savePlayerProfile,
         onOpenCharacter: () => navigate({ screen: 'character' }),
         onOpenAdmin: () => navigate({ screen: 'admin' }),
+        onOpenSkills: () => navigate({ screen: 'skills' }),
+        onOpenSpecializations: () => navigate({ screen: 'specializations' }),
         onSwitch: () => {
           showIdentity = true;
           navigate({ screen: 'splash' });
         },
         onOpenRanking: () => navigate({ screen: 'ranking' })
+      });
+      break;
+
+    case 'worldMap':
+      renderWorldMapPage(elements.pageHost, {
+        player: activePlayer,
+        world: activeWorld,
+        questCatalog: activeQuestCatalog,
+        questProgress: activeCharacter
+          ? loadQuestProgress(activeCharacter.id).quests
+          : {},
+        progression: activeProgression,
+        onBack: () => navigate({ screen: 'splash' }),
+        onOpenTerritory: (territoryId) => navigate({ screen: 'territory', territoryId }),
+        onOpenTrack: (trackId) => navigate({ screen: 'track', trackId })
+      });
+      break;
+
+    case 'territory':
+      renderTerritoryPage(elements.pageHost, {
+        player: activePlayer,
+        world: activeWorld,
+        territory: activeWorld?.territories?.find(
+          (item) => item.id === state.activeTerritoryId
+        ) ?? null,
+        questCatalog: activeQuestCatalog,
+        questProgress: activeCharacter
+          ? loadQuestProgress(activeCharacter.id).quests
+          : {},
+        progression: activeProgression,
+        onBack: () => navigate({ screen: 'worldMap' }),
+        onOpenTrack: (trackId) => navigate({ screen: 'track', trackId })
+      });
+      break;
+
+    case 'track':
+      renderTrackPage(elements.pageHost, {
+        player: activePlayer,
+        world: activeWorld,
+        track: activeWorld?.tracks?.find((item) => item.id === state.activeTrackId) ?? null,
+        questCatalog: activeQuestCatalog,
+        questProgress: activeCharacter
+          ? loadQuestProgress(activeCharacter.id).quests
+          : {},
+        progression: activeProgression,
+        onBack: () => navigateTrackBack(state.activeTrackId),
+        onOpenQuest: (questId) => navigate({ screen: 'questDetail', questId })
+      });
+      break;
+
+    case 'questDetail':
+      renderQuestDetailPage(elements.pageHost, {
+        player: activePlayer,
+        character: activeCharacter,
+        world: activeWorld,
+        quest: activeQuestCatalog?.quests?.find(
+          (item) => item.id === state.activeQuestId
+        ) ?? null,
+        questCatalog: activeQuestCatalog,
+        questProgress: activeCharacter
+          ? loadQuestProgress(activeCharacter.id).quests
+          : {},
+        progression: activeProgression,
+        onBack: () => navigateQuestBack(state.activeQuestId),
+        onStartQuest: startCharacterQuest
+      });
+      break;
+
+    case 'skills':
+      renderSkillsPage(elements.pageHost, {
+        player: activePlayer,
+        character: activeCharacter,
+        world: activeWorld,
+        progression: activeProgression,
+        questCatalog: activeQuestCatalog,
+        onBack: () => navigate({ screen: 'profile' }),
+        onOpenSpecializations: () => navigate({ screen: 'specializations' })
+      });
+      break;
+
+    case 'specializations':
+      renderSpecializationsPage(elements.pageHost, {
+        player: activePlayer,
+        character: activeCharacter,
+        world: activeWorld,
+        progression: activeProgression,
+        onBack: () => navigate({ screen: 'profile' }),
+        onOpenSkills: () => navigate({ screen: 'skills' })
       });
       break;
 
@@ -935,7 +1216,8 @@ function syncNormalizaQuest() {
     character: activeCharacter,
     quest,
     score: progress.totalScore,
-    catalog: activeCatalog
+    catalog: activeCatalog,
+    world: activeWorld
   });
 
   if (result.progression) {
@@ -1041,6 +1323,42 @@ function createAdminAttribute(patch) {
   activeCatalog = loadCatalog();
   adminNotice = 'Atributo criado.';
   render();
+}
+
+async function saveAdminWorldContent({ world, questCatalog }) {
+  if (world) {
+    activeWorld = saveWorldCatalog(world);
+  }
+
+  if (questCatalog) {
+    activeQuestCatalog = saveQuestCatalog(questCatalog);
+  }
+
+  adminNotice = isDatabaseContentEnabled()
+    ? 'Conteúdo salvo localmente; sincronizando com o PostgreSQL...'
+    : 'Conteúdo do mapa atualizado localmente.';
+  render();
+
+  if (!isDatabaseContentEnabled()) {
+    return;
+  }
+
+  try {
+    const saved = await saveDatabaseContent({
+      world: activeWorld,
+      questCatalog: activeQuestCatalog
+    });
+
+    if (saved.saved) {
+      activeWorld = saveWorldCatalog(saved.world);
+      activeQuestCatalog = saveQuestCatalog(saved.questCatalog);
+      adminNotice = 'Conteúdo do mapa salvo no PostgreSQL.';
+      render();
+    }
+  } catch {
+    adminNotice = 'Conteúdo salvo localmente; falha ao salvar no PostgreSQL.';
+    render();
+  }
 }
 
 function saveAdminValues(values) {
@@ -1171,6 +1489,47 @@ function getPhaseDefinition(phaseId) {
   return phaseDefinitions.find((definition) => definition.data.id === phaseId) || null;
 }
 
+function navigateTrackBack(trackId) {
+  const link = activeWorld?.trackTerritories?.find((item) => item.trackId === trackId);
+  navigate(
+    link
+      ? { screen: 'territory', territoryId: link.territoryId }
+      : { screen: 'worldMap' }
+  );
+}
+
+function navigateQuestBack(questId) {
+  const link = activeWorld?.trackQuests?.find((item) => item.questId === questId);
+  navigate(
+    link
+      ? { screen: 'track', trackId: link.trackId }
+      : { screen: 'worldMap' }
+  );
+}
+
+const RETURN_TO_KEY = 'normaliza:returnTo';
+
+function saveReturnTo(hash) {
+  try {
+    if (hash && hash !== '#/' && hash !== '#/login') {
+      globalThis.sessionStorage?.setItem(RETURN_TO_KEY, hash);
+    }
+  } catch {
+    return false;
+  }
+  return true;
+}
+
+function consumeReturnTo() {
+  try {
+    const value = globalThis.sessionStorage?.getItem(RETURN_TO_KEY);
+    globalThis.sessionStorage?.removeItem(RETURN_TO_KEY);
+    return value || null;
+  } catch {
+    return null;
+  }
+}
+
 function navigate(route) {
   const hash = toHash(route);
 
@@ -1188,8 +1547,26 @@ function handleRoute() {
   }
 
   let route = parseRoute(window.location.hash);
+  const publicScreens = ['splash', 'login', 'register', 'recover', 'about'];
+  const authScreens = ['login', 'register', 'recover'];
 
-  if (!activePlayer && route.screen !== 'splash') {
+  if (!isTestMode()) {
+    if (!activeAuthUser && !publicScreens.includes(route.screen)) {
+      saveReturnTo(toHash(route));
+      window.history.replaceState(null, '', '#/login');
+      route = { screen: 'login', buildingId: null };
+    } else if (activeAuthUser && !activePlayer) {
+      if (!['onboarding', ...authScreens].includes(route.screen)) {
+        window.history.replaceState(null, '', '#/onboarding');
+        route = { screen: 'onboarding', buildingId: null };
+      }
+    } else if (activeAuthUser && activePlayer) {
+      if (['splash', 'onboarding', ...authScreens].includes(route.screen)) {
+        window.history.replaceState(null, '', '#/jogador');
+        route = { screen: 'journey', buildingId: null };
+      }
+    }
+  } else if (!activePlayer && route.screen !== 'splash') {
     window.history.replaceState(null, '', '#/');
     route = { screen: 'splash', buildingId: null };
   }
@@ -1197,6 +1574,30 @@ function handleRoute() {
   if (route.screen === 'phase' && !phaseControllers.has(route.phaseId)) {
     window.history.replaceState(null, '', '#/cidade');
     route = { screen: 'city', buildingId: null };
+  }
+
+  if (
+    route.screen === 'territory' &&
+    !activeWorld?.territories?.some((item) => item.id === route.territoryId && (item.status ?? 'published') === 'published')
+  ) {
+    window.history.replaceState(null, '', '#/mapa');
+    route = { screen: 'worldMap', buildingId: null };
+  }
+
+  if (
+    route.screen === 'track' &&
+    !activeWorld?.tracks?.some((item) => item.id === route.trackId && (item.status ?? 'published') === 'published')
+  ) {
+    window.history.replaceState(null, '', '#/mapa');
+    route = { screen: 'worldMap', buildingId: null };
+  }
+
+  if (
+    route.screen === 'questDetail' &&
+    !activeQuestCatalog?.quests?.some((item) => item.id === route.questId)
+  ) {
+    window.history.replaceState(null, '', '#/mapa');
+    route = { screen: 'worldMap', buildingId: null };
   }
 
   if (route.screen === 'mission' && route.missionId !== missionData.id) {
@@ -1241,11 +1642,12 @@ function handleRoute() {
 }
 
 function render() {
-  const isSplash = state.screen === 'splash';
+  const isSplash = state.screen === 'splash' || state.screen === 'journey';
+  const isPublicHome = state.screen === 'splash' && !activeAuthUser && !isTestMode();
   const isCity = state.screen === 'city';
   const isPhase = state.screen === 'phase';
   const isMission = state.screen === 'mission';
-  const isPage = ['profile', 'character', 'knowledge', 'ranking', 'achievements', 'about', 'challenges', 'admin'].includes(state.screen);
+  const isPage = ['profile', 'character', 'knowledge', 'worldMap', 'territory', 'track', 'questDetail', 'skills', 'specializations', 'ranking', 'achievements', 'about', 'challenges', 'admin', 'adminWorld', 'login', 'register', 'recover', 'onboarding'].includes(state.screen);
   const isGame = isCity || isPhase || isMission;
   const activePhase = isPhase ? getPhaseDefinition(state.activePhaseId) : null;
   const enteringCity = isCity && currentScreen !== 'city';
@@ -1272,7 +1674,11 @@ function render() {
   }
 
   if (isSplash) {
-    renderHomeScreen();
+    if (isPublicHome) {
+      renderPublicScreen();
+    } else {
+      renderHomeScreen();
+    }
   } else if (isPage) {
     renderPageScreen();
   } else if (isGame) {
@@ -1477,9 +1883,33 @@ function handleGlobalKeydown(event) {
     return;
   }
 
-  if (['profile', 'character', 'knowledge', 'ranking', 'achievements', 'about', 'challenges', 'admin'].includes(state.screen)) {
+  if (['skills', 'specializations'].includes(state.screen)) {
+    event.preventDefault();
+    navigate({ screen: 'profile' });
+    return;
+  }
+
+  if (['profile', 'character', 'knowledge', 'worldMap', 'ranking', 'achievements', 'about', 'challenges', 'admin', 'adminWorld'].includes(state.screen)) {
     event.preventDefault();
     navigate({ screen: 'splash', buildingId: null });
+    return;
+  }
+
+  if (state.screen === 'territory') {
+    event.preventDefault();
+    navigate({ screen: 'worldMap' });
+    return;
+  }
+
+  if (state.screen === 'track') {
+    event.preventDefault();
+    navigateTrackBack(state.activeTrackId);
+    return;
+  }
+
+  if (state.screen === 'questDetail') {
+    event.preventDefault();
+    navigateQuestBack(state.activeQuestId);
     return;
   }
 
@@ -1510,8 +1940,15 @@ function updateDocumentTitle() {
     about: 'Sobre o jogo',
     challenges: 'Desafios',
     knowledge: 'Árvore de Conhecimento',
+    worldMap: 'Mapa do Mundo',
+    territory: 'Território',
+    track: 'Trilha de Conhecimento',
+    questDetail: 'Quest',
+    skills: 'Habilidades',
+    specializations: 'Minha Especialização',
     character: 'Meu personagem',
-    admin: 'Administração'
+    admin: 'Administração',
+    adminWorld: 'Administração do Mundo'
   };
 
   if (state.screen === 'splash') {

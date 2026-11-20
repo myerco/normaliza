@@ -1,0 +1,2722 @@
+{
+  "generatedAt": "2026-11-19T15:40:06.396Z",
+  "world": {
+    "version": 1,
+    "territories": [
+      {
+        "id": "jogos",
+        "slug": "jogos",
+        "name": "Desenvolvimento de Jogos",
+        "shortName": "JOGOS",
+        "description": "Criação de jogos digitais, narrativa, arte e programação de gameplay.",
+        "color": "#4d9b9f",
+        "icon": "JG",
+        "mapX": 17,
+        "mapY": 26,
+        "order": 1,
+        "status": "published",
+        "publishedAt": null,
+        "frontier": false
+      },
+      {
+        "id": "computacao",
+        "slug": "computacao",
+        "name": "Computação e Engenharia de Software",
+        "shortName": "COMPUTAÇÃO",
+        "description": "Fundamentos da computação, algoritmos, programação e arquitetura de sistemas.",
+        "color": "#4a84b0",
+        "icon": "CP",
+        "mapX": 45,
+        "mapY": 15,
+        "order": 2,
+        "status": "published",
+        "publishedAt": null,
+        "frontier": false
+      },
+      {
+        "id": "dados",
+        "slug": "dados",
+        "name": "Dados e Banco de Dados",
+        "shortName": "DADOS",
+        "description": "Modelagem, SQL, administração, engenharia e ciência de dados.",
+        "color": "#c4664f",
+        "icon": "DB",
+        "mapX": 34,
+        "mapY": 57,
+        "order": 3,
+        "status": "published",
+        "publishedAt": null,
+        "frontier": false
+      },
+      {
+        "id": "soberania",
+        "slug": "soberania",
+        "name": "Soberania Digital",
+        "shortName": "SOBERANIA",
+        "description": "Autonomia tecnológica, software livre, governança e infraestrutura pública.",
+        "color": "#c9a227",
+        "icon": "SD",
+        "mapX": 70,
+        "mapY": 63,
+        "order": 4,
+        "status": "published",
+        "publishedAt": null,
+        "frontier": false
+      },
+      {
+        "id": "infraestrutura",
+        "slug": "infraestrutura",
+        "name": "Sistemas e Infraestrutura Digital",
+        "shortName": "INFRA",
+        "description": "Sistemas operacionais, redes, containers, nuvem, DevOps e segurança.",
+        "color": "#7a6fb0",
+        "icon": "SI",
+        "mapX": 79,
+        "mapY": 29,
+        "order": 5,
+        "status": "published",
+        "publishedAt": null,
+        "frontier": true
+      }
+    ],
+    "tracks": [
+      {
+        "id": "fundamentos-jogos",
+        "slug": "fundamentos-jogos",
+        "name": "Fundamentos de Jogos Digitais",
+        "description": "Trilha de Fundamentos de Jogos Digitais.",
+        "objective": "Desenvolver competências em Fundamentos de Jogos Digitais.",
+        "order": 1,
+        "status": "published"
+      },
+      {
+        "id": "game-design",
+        "slug": "game-design",
+        "name": "Game Design",
+        "description": "Trilha de Game Design.",
+        "objective": "Desenvolver competências em Game Design.",
+        "order": 1,
+        "status": "published"
+      },
+      {
+        "id": "roteirizacao-jogos",
+        "slug": "roteirizacao-jogos",
+        "name": "Roteirização de Jogos",
+        "description": "Trilha de Roteirização de Jogos.",
+        "objective": "Desenvolver competências em Roteirização de Jogos.",
+        "order": 1,
+        "status": "published"
+      },
+      {
+        "id": "narrativa-mundos",
+        "slug": "narrativa-mundos",
+        "name": "Narrativa e Construção de Mundos",
+        "description": "Trilha de Narrativa e Construção de Mundos.",
+        "objective": "Desenvolver competências em Narrativa e Construção de Mundos.",
+        "order": 1,
+        "status": "published"
+      },
+      {
+        "id": "unreal-engine",
+        "slug": "unreal-engine",
+        "name": "Unreal Engine",
+        "description": "Trilha de Unreal Engine.",
+        "objective": "Desenvolver competências em Unreal Engine.",
+        "order": 1,
+        "status": "published"
+      },
+      {
+        "id": "programacao-jogos",
+        "slug": "programacao-jogos",
+        "name": "Programação de Jogos",
+        "description": "Trilha de Programação de Jogos.",
+        "objective": "Desenvolver competências em Programação de Jogos.",
+        "order": 1,
+        "status": "published"
+      },
+      {
+        "id": "cpp-jogos",
+        "slug": "cpp-jogos",
+        "name": "Programação C++",
+        "description": "Trilha de Programação C++.",
+        "objective": "Desenvolver competências em Programação C++.",
+        "order": 1,
+        "status": "published"
+      },
+      {
+        "id": "blueprints",
+        "slug": "blueprints",
+        "name": "Blueprints",
+        "description": "Trilha de Blueprints.",
+        "objective": "Desenvolver competências em Blueprints.",
+        "order": 1,
+        "status": "published"
+      },
+      {
+        "id": "modelagem-animacao",
+        "slug": "modelagem-animacao",
+        "name": "Modelagem e Animação",
+        "description": "Trilha de Modelagem e Animação.",
+        "objective": "Desenvolver competências em Modelagem e Animação.",
+        "order": 1,
+        "status": "published"
+      },
+      {
+        "id": "computacao-grafica-jogos",
+        "slug": "computacao-grafica-jogos",
+        "name": "Computação Gráfica aplicada a Jogos",
+        "description": "Trilha de Computação Gráfica aplicada a Jogos.",
+        "objective": "Desenvolver competências em Computação Gráfica aplicada a Jogos.",
+        "order": 1,
+        "status": "published"
+      },
+      {
+        "id": "fundamentos-computacao",
+        "slug": "fundamentos-computacao",
+        "name": "Fundamentos da Computação",
+        "description": "Trilha de Fundamentos da Computação.",
+        "objective": "Desenvolver competências em Fundamentos da Computação.",
+        "order": 1,
+        "status": "published"
+      },
+      {
+        "id": "logica-programacao",
+        "slug": "logica-programacao",
+        "name": "Lógica de Programação",
+        "description": "Trilha de Lógica de Programação.",
+        "objective": "Desenvolver competências em Lógica de Programação.",
+        "order": 1,
+        "status": "published"
+      },
+      {
+        "id": "algoritmos-estruturas",
+        "slug": "algoritmos-estruturas",
+        "name": "Algoritmos e Estruturas de Dados",
+        "description": "Trilha de Algoritmos e Estruturas de Dados.",
+        "objective": "Desenvolver competências em Algoritmos e Estruturas de Dados.",
+        "order": 1,
+        "status": "published"
+      },
+      {
+        "id": "programacao",
+        "slug": "programacao",
+        "name": "Programação",
+        "description": "Trilha de Programação.",
+        "objective": "Desenvolver competências em Programação.",
+        "order": 1,
+        "status": "published"
+      },
+      {
+        "id": "poo",
+        "slug": "poo",
+        "name": "Programação Orientada a Objetos",
+        "description": "Trilha de Programação Orientada a Objetos.",
+        "objective": "Desenvolver competências em Programação Orientada a Objetos.",
+        "order": 1,
+        "status": "published"
+      },
+      {
+        "id": "engenharia-software",
+        "slug": "engenharia-software",
+        "name": "Engenharia de Software",
+        "description": "Trilha de Engenharia de Software.",
+        "objective": "Desenvolver competências em Engenharia de Software.",
+        "order": 1,
+        "status": "published"
+      },
+      {
+        "id": "arquitetura-sistemas",
+        "slug": "arquitetura-sistemas",
+        "name": "Arquitetura de Sistemas",
+        "description": "Trilha de Arquitetura de Sistemas.",
+        "objective": "Desenvolver competências em Arquitetura de Sistemas.",
+        "order": 1,
+        "status": "published"
+      },
+      {
+        "id": "computacao-grafica",
+        "slug": "computacao-grafica",
+        "name": "Computação Gráfica",
+        "description": "Trilha de Computação Gráfica.",
+        "objective": "Desenvolver competências em Computação Gráfica.",
+        "order": 1,
+        "status": "published"
+      },
+      {
+        "id": "fundamentos-banco",
+        "slug": "fundamentos-banco",
+        "name": "Fundamentos de Banco de Dados",
+        "description": "Trilha de Fundamentos de Banco de Dados.",
+        "objective": "Desenvolver competências em Fundamentos de Banco de Dados.",
+        "order": 1,
+        "status": "published"
+      },
+      {
+        "id": "modelagem-dados",
+        "slug": "modelagem-dados",
+        "name": "Modelagem de Dados",
+        "description": "Trilha de Modelagem de Dados.",
+        "objective": "Desenvolver competências em Modelagem de Dados.",
+        "order": 1,
+        "status": "published"
+      },
+      {
+        "id": "modelagem-normalizacao",
+        "slug": "modelagem-normalizacao",
+        "name": "Modelagem e Normalização de Banco de Dados",
+        "description": "Trilha principal da Quest 01, dedicada à modelagem relacional e às formas normais.",
+        "objective": "Desenvolver competências em Modelagem e Normalização de Banco de Dados.",
+        "order": 1,
+        "status": "published"
+      },
+      {
+        "id": "sql",
+        "slug": "sql",
+        "name": "SQL",
+        "description": "Trilha de SQL.",
+        "objective": "Desenvolver competências em SQL.",
+        "order": 1,
+        "status": "published"
+      },
+      {
+        "id": "desenvolvimento-banco",
+        "slug": "desenvolvimento-banco",
+        "name": "Desenvolvimento com Banco de Dados",
+        "description": "Trilha de Desenvolvimento com Banco de Dados.",
+        "objective": "Desenvolver competências em Desenvolvimento com Banco de Dados.",
+        "order": 1,
+        "status": "published"
+      },
+      {
+        "id": "administracao-banco",
+        "slug": "administracao-banco",
+        "name": "Administração de Banco de Dados",
+        "description": "Trilha de Administração de Banco de Dados.",
+        "objective": "Desenvolver competências em Administração de Banco de Dados.",
+        "order": 1,
+        "status": "published"
+      },
+      {
+        "id": "postgresql",
+        "slug": "postgresql",
+        "name": "PostgreSQL",
+        "description": "Trilha de PostgreSQL.",
+        "objective": "Desenvolver competências em PostgreSQL.",
+        "order": 1,
+        "status": "published"
+      },
+      {
+        "id": "oracle",
+        "slug": "oracle",
+        "name": "Oracle",
+        "description": "Trilha de Oracle.",
+        "objective": "Desenvolver competências em Oracle.",
+        "order": 1,
+        "status": "published"
+      },
+      {
+        "id": "engenharia-dados",
+        "slug": "engenharia-dados",
+        "name": "Engenharia de Dados",
+        "description": "Trilha de Engenharia de Dados.",
+        "objective": "Desenvolver competências em Engenharia de Dados.",
+        "order": 1,
+        "status": "published"
+      },
+      {
+        "id": "ciencia-dados",
+        "slug": "ciencia-dados",
+        "name": "Ciência de Dados",
+        "description": "Trilha de Ciência de Dados.",
+        "objective": "Desenvolver competências em Ciência de Dados.",
+        "order": 1,
+        "status": "published"
+      },
+      {
+        "id": "analise-dados",
+        "slug": "analise-dados",
+        "name": "Análise de Dados",
+        "description": "Trilha de Análise de Dados.",
+        "objective": "Desenvolver competências em Análise de Dados.",
+        "order": 1,
+        "status": "published"
+      },
+      {
+        "id": "data-warehouse-bi",
+        "slug": "data-warehouse-bi",
+        "name": "Data Warehouse e Business Intelligence",
+        "description": "Trilha de Data Warehouse e Business Intelligence.",
+        "objective": "Desenvolver competências em Data Warehouse e Business Intelligence.",
+        "order": 1,
+        "status": "published"
+      },
+      {
+        "id": "fundamentos-soberania",
+        "slug": "fundamentos-soberania",
+        "name": "Fundamentos da Soberania Digital",
+        "description": "Trilha de Fundamentos da Soberania Digital.",
+        "objective": "Desenvolver competências em Fundamentos da Soberania Digital.",
+        "order": 1,
+        "status": "published"
+      },
+      {
+        "id": "software-livre",
+        "slug": "software-livre",
+        "name": "Software Livre e Código Aberto",
+        "description": "Trilha de Software Livre e Código Aberto.",
+        "objective": "Desenvolver competências em Software Livre e Código Aberto.",
+        "order": 1,
+        "status": "published"
+      },
+      {
+        "id": "infraestrutura-digital",
+        "slug": "infraestrutura-digital",
+        "name": "Infraestrutura Digital",
+        "description": "Trilha de Infraestrutura Digital.",
+        "objective": "Desenvolver competências em Infraestrutura Digital.",
+        "order": 1,
+        "status": "published"
+      },
+      {
+        "id": "soberania-dados",
+        "slug": "soberania-dados",
+        "name": "Soberania dos Dados",
+        "description": "Trilha de Soberania dos Dados.",
+        "objective": "Desenvolver competências em Soberania dos Dados.",
+        "order": 1,
+        "status": "published"
+      },
+      {
+        "id": "dependencia-tecnologica",
+        "slug": "dependencia-tecnologica",
+        "name": "Dependência Tecnológica",
+        "description": "Trilha de Dependência Tecnológica.",
+        "objective": "Desenvolver competências em Dependência Tecnológica.",
+        "order": 1,
+        "status": "published"
+      },
+      {
+        "id": "governanca-digital",
+        "slug": "governanca-digital",
+        "name": "Governança Digital",
+        "description": "Trilha de Governança Digital.",
+        "objective": "Desenvolver competências em Governança Digital.",
+        "order": 1,
+        "status": "published"
+      },
+      {
+        "id": "seguranca-autonomia",
+        "slug": "seguranca-autonomia",
+        "name": "Segurança e Autonomia Tecnológica",
+        "description": "Trilha de Segurança e Autonomia Tecnológica.",
+        "objective": "Desenvolver competências em Segurança e Autonomia Tecnológica.",
+        "order": 1,
+        "status": "published"
+      },
+      {
+        "id": "tecnologias-publicas",
+        "slug": "tecnologias-publicas",
+        "name": "Tecnologias Públicas",
+        "description": "Trilha de Tecnologias Públicas.",
+        "objective": "Desenvolver competências em Tecnologias Públicas.",
+        "order": 1,
+        "status": "published"
+      },
+      {
+        "id": "sistemas-operacionais",
+        "slug": "sistemas-operacionais",
+        "name": "Sistemas Operacionais",
+        "description": "Trilha de Sistemas Operacionais.",
+        "objective": "Desenvolver competências em Sistemas Operacionais.",
+        "order": 1,
+        "status": "published"
+      },
+      {
+        "id": "linux",
+        "slug": "linux",
+        "name": "Linux",
+        "description": "Trilha de Linux.",
+        "objective": "Desenvolver competências em Linux.",
+        "order": 1,
+        "status": "published"
+      },
+      {
+        "id": "redes",
+        "slug": "redes",
+        "name": "Redes de Computadores",
+        "description": "Trilha de Redes de Computadores.",
+        "objective": "Desenvolver competências em Redes de Computadores.",
+        "order": 1,
+        "status": "published"
+      },
+      {
+        "id": "administracao-sistemas",
+        "slug": "administracao-sistemas",
+        "name": "Administração de Sistemas",
+        "description": "Trilha de Administração de Sistemas.",
+        "objective": "Desenvolver competências em Administração de Sistemas.",
+        "order": 1,
+        "status": "published"
+      },
+      {
+        "id": "virtualizacao",
+        "slug": "virtualizacao",
+        "name": "Virtualização",
+        "description": "Trilha de Virtualização.",
+        "objective": "Desenvolver competências em Virtualização.",
+        "order": 1,
+        "status": "published"
+      },
+      {
+        "id": "docker",
+        "slug": "docker",
+        "name": "Docker",
+        "description": "Trilha de Docker.",
+        "objective": "Desenvolver competências em Docker.",
+        "order": 1,
+        "status": "published"
+      },
+      {
+        "id": "kubernetes",
+        "slug": "kubernetes",
+        "name": "Kubernetes",
+        "description": "Trilha de Kubernetes.",
+        "objective": "Desenvolver competências em Kubernetes.",
+        "order": 1,
+        "status": "published"
+      },
+      {
+        "id": "devops",
+        "slug": "devops",
+        "name": "DevOps",
+        "description": "Trilha de DevOps.",
+        "objective": "Desenvolver competências em DevOps.",
+        "order": 1,
+        "status": "published"
+      },
+      {
+        "id": "cloud",
+        "slug": "cloud",
+        "name": "Computação em Nuvem",
+        "description": "Trilha de Computação em Nuvem.",
+        "objective": "Desenvolver competências em Computação em Nuvem.",
+        "order": 1,
+        "status": "published"
+      },
+      {
+        "id": "seguranca-informacao",
+        "slug": "seguranca-informacao",
+        "name": "Segurança da Informação",
+        "description": "Trilha de Segurança da Informação.",
+        "objective": "Desenvolver competências em Segurança da Informação.",
+        "order": 1,
+        "status": "published"
+      }
+    ],
+    "skills": [
+      {
+        "id": "sql-basico",
+        "slug": "sql-basico",
+        "name": "SQL Básico",
+        "description": "SQL Básico: competência prática da jornada.",
+        "categoryId": "dados",
+        "icon": "SQL",
+        "maxLevel": 10,
+        "order": 1,
+        "status": "published"
+      },
+      {
+        "id": "sql-avancado",
+        "slug": "sql-avancado",
+        "name": "SQL Avançado",
+        "description": "SQL Avançado: competência prática da jornada.",
+        "categoryId": "dados",
+        "icon": "SQL+",
+        "maxLevel": 10,
+        "order": 2,
+        "status": "published"
+      },
+      {
+        "id": "postgresql-admin",
+        "slug": "postgresql-admin",
+        "name": "Administração PostgreSQL",
+        "description": "Administração PostgreSQL: competência prática da jornada.",
+        "categoryId": "dados",
+        "icon": "PG",
+        "maxLevel": 10,
+        "order": 3,
+        "status": "published"
+      },
+      {
+        "id": "desenvolvedor",
+        "slug": "desenvolvedor",
+        "name": "Desenvolvimento de Software",
+        "description": "Desenvolvimento de Software: competência prática da jornada.",
+        "categoryId": "computacao",
+        "icon": "DEV",
+        "maxLevel": 10,
+        "order": 4,
+        "status": "published"
+      },
+      {
+        "id": "modelagem-dados",
+        "slug": "modelagem-dados",
+        "name": "Modelagem de Dados",
+        "description": "Modelagem de Dados: competência prática da jornada.",
+        "categoryId": "dados",
+        "icon": "MD",
+        "maxLevel": 10,
+        "order": 5,
+        "status": "published"
+      },
+      {
+        "id": "normalizacao",
+        "slug": "normalizacao",
+        "name": "Normalização de Banco de Dados",
+        "description": "Normalização de Banco de Dados: competência prática da jornada.",
+        "categoryId": "dados",
+        "icon": "NF",
+        "maxLevel": 10,
+        "order": 6,
+        "status": "published"
+      },
+      {
+        "id": "administracao-banco",
+        "slug": "administracao-banco",
+        "name": "Administração de Banco de Dados",
+        "description": "Administração de Banco de Dados: competência prática da jornada.",
+        "categoryId": "dados",
+        "icon": "DBA",
+        "maxLevel": 10,
+        "order": 7,
+        "status": "published"
+      },
+      {
+        "id": "oracle",
+        "slug": "oracle",
+        "name": "Oracle",
+        "description": "Oracle: competência prática da jornada.",
+        "categoryId": "dados",
+        "icon": "ORA",
+        "maxLevel": 10,
+        "order": 8,
+        "status": "published"
+      },
+      {
+        "id": "engenharia-dados",
+        "slug": "engenharia-dados",
+        "name": "Engenharia de Dados",
+        "description": "Engenharia de Dados: competência prática da jornada.",
+        "categoryId": "dados",
+        "icon": "ED",
+        "maxLevel": 10,
+        "order": 9,
+        "status": "published"
+      },
+      {
+        "id": "ciencia-dados",
+        "slug": "ciencia-dados",
+        "name": "Ciência de Dados",
+        "description": "Ciência de Dados: competência prática da jornada.",
+        "categoryId": "dados",
+        "icon": "CD",
+        "maxLevel": 10,
+        "order": 10,
+        "status": "published"
+      },
+      {
+        "id": "analise-dados",
+        "slug": "analise-dados",
+        "name": "Análise de Dados",
+        "description": "Análise de Dados: competência prática da jornada.",
+        "categoryId": "dados",
+        "icon": "AD",
+        "maxLevel": 10,
+        "order": 11,
+        "status": "published"
+      },
+      {
+        "id": "data-warehouse",
+        "slug": "data-warehouse",
+        "name": "Data Warehouse e BI",
+        "description": "Data Warehouse e BI: competência prática da jornada.",
+        "categoryId": "dados",
+        "icon": "DW",
+        "maxLevel": 10,
+        "order": 12,
+        "status": "published"
+      },
+      {
+        "id": "logica-programacao",
+        "slug": "logica-programacao",
+        "name": "Lógica de Programação",
+        "description": "Lógica de Programação: competência prática da jornada.",
+        "categoryId": "computacao",
+        "icon": "LG",
+        "maxLevel": 10,
+        "order": 13,
+        "status": "published"
+      },
+      {
+        "id": "programacao",
+        "slug": "programacao",
+        "name": "Programação",
+        "description": "Programação: competência prática da jornada.",
+        "categoryId": "computacao",
+        "icon": "PRG",
+        "maxLevel": 10,
+        "order": 14,
+        "status": "published"
+      },
+      {
+        "id": "poo",
+        "slug": "poo",
+        "name": "Programação Orientada a Objetos",
+        "description": "Programação Orientada a Objetos: competência prática da jornada.",
+        "categoryId": "computacao",
+        "icon": "POO",
+        "maxLevel": 10,
+        "order": 15,
+        "status": "published"
+      },
+      {
+        "id": "engenharia-software",
+        "slug": "engenharia-software",
+        "name": "Engenharia de Software",
+        "description": "Engenharia de Software: competência prática da jornada.",
+        "categoryId": "computacao",
+        "icon": "ES",
+        "maxLevel": 10,
+        "order": 16,
+        "status": "published"
+      },
+      {
+        "id": "arquitetura-sistemas",
+        "slug": "arquitetura-sistemas",
+        "name": "Arquitetura de Sistemas",
+        "description": "Arquitetura de Sistemas: competência prática da jornada.",
+        "categoryId": "computacao",
+        "icon": "ARQ",
+        "maxLevel": 10,
+        "order": 17,
+        "status": "published"
+      },
+      {
+        "id": "versionamento",
+        "slug": "versionamento",
+        "name": "Versionamento",
+        "description": "Versionamento: competência prática da jornada.",
+        "categoryId": "computacao",
+        "icon": "GIT",
+        "maxLevel": 10,
+        "order": 18,
+        "status": "published"
+      },
+      {
+        "id": "apis",
+        "slug": "apis",
+        "name": "APIs e Integrações",
+        "description": "APIs e Integrações: competência prática da jornada.",
+        "categoryId": "computacao",
+        "icon": "API",
+        "maxLevel": 10,
+        "order": 19,
+        "status": "published"
+      },
+      {
+        "id": "computacao-grafica",
+        "slug": "computacao-grafica",
+        "name": "Computação Gráfica",
+        "description": "Computação Gráfica: competência prática da jornada.",
+        "categoryId": "computacao",
+        "icon": "CG",
+        "maxLevel": 10,
+        "order": 20,
+        "status": "published"
+      },
+      {
+        "id": "fundamentos-jogos",
+        "slug": "fundamentos-jogos",
+        "name": "Fundamentos de Jogos",
+        "description": "Fundamentos de Jogos: competência prática da jornada.",
+        "categoryId": "jogos",
+        "icon": "FJ",
+        "maxLevel": 10,
+        "order": 21,
+        "status": "published"
+      },
+      {
+        "id": "game-design",
+        "slug": "game-design",
+        "name": "Game Design",
+        "description": "Game Design: competência prática da jornada.",
+        "categoryId": "jogos",
+        "icon": "GD",
+        "maxLevel": 10,
+        "order": 22,
+        "status": "published"
+      },
+      {
+        "id": "roteirizacao",
+        "slug": "roteirizacao",
+        "name": "Roteirização de Jogos",
+        "description": "Roteirização de Jogos: competência prática da jornada.",
+        "categoryId": "jogos",
+        "icon": "RT",
+        "maxLevel": 10,
+        "order": 23,
+        "status": "published"
+      },
+      {
+        "id": "narrativa",
+        "slug": "narrativa",
+        "name": "Narrativa e Construção de Mundos",
+        "description": "Narrativa e Construção de Mundos: competência prática da jornada.",
+        "categoryId": "jogos",
+        "icon": "NW",
+        "maxLevel": 10,
+        "order": 24,
+        "status": "published"
+      },
+      {
+        "id": "unreal-engine",
+        "slug": "unreal-engine",
+        "name": "Unreal Engine",
+        "description": "Unreal Engine: competência prática da jornada.",
+        "categoryId": "jogos",
+        "icon": "UE",
+        "maxLevel": 10,
+        "order": 25,
+        "status": "published"
+      },
+      {
+        "id": "blueprints",
+        "slug": "blueprints",
+        "name": "Blueprints",
+        "description": "Blueprints: competência prática da jornada.",
+        "categoryId": "jogos",
+        "icon": "BP",
+        "maxLevel": 10,
+        "order": 26,
+        "status": "published"
+      },
+      {
+        "id": "cpp",
+        "slug": "cpp",
+        "name": "Programação C++",
+        "description": "Programação C++: competência prática da jornada.",
+        "categoryId": "jogos",
+        "icon": "C++",
+        "maxLevel": 10,
+        "order": 27,
+        "status": "published"
+      },
+      {
+        "id": "level-design",
+        "slug": "level-design",
+        "name": "Level Design",
+        "description": "Level Design: competência prática da jornada.",
+        "categoryId": "jogos",
+        "icon": "LD",
+        "maxLevel": 10,
+        "order": 28,
+        "status": "published"
+      },
+      {
+        "id": "otimizacao",
+        "slug": "otimizacao",
+        "name": "Otimização",
+        "description": "Otimização: competência prática da jornada.",
+        "categoryId": "jogos",
+        "icon": "OPT",
+        "maxLevel": 10,
+        "order": 29,
+        "status": "published"
+      },
+      {
+        "id": "soberania-digital",
+        "slug": "soberania-digital",
+        "name": "Soberania Digital",
+        "description": "Soberania Digital: competência prática da jornada.",
+        "categoryId": "soberania",
+        "icon": "SD",
+        "maxLevel": 10,
+        "order": 30,
+        "status": "published"
+      },
+      {
+        "id": "software-livre",
+        "slug": "software-livre",
+        "name": "Software Livre e Código Aberto",
+        "description": "Software Livre e Código Aberto: competência prática da jornada.",
+        "categoryId": "soberania",
+        "icon": "OSS",
+        "maxLevel": 10,
+        "order": 31,
+        "status": "published"
+      },
+      {
+        "id": "governanca-digital",
+        "slug": "governanca-digital",
+        "name": "Governança Digital",
+        "description": "Governança Digital: competência prática da jornada.",
+        "categoryId": "soberania",
+        "icon": "GOV",
+        "maxLevel": 10,
+        "order": 32,
+        "status": "published"
+      },
+      {
+        "id": "infraestrutura-digital",
+        "slug": "infraestrutura-digital",
+        "name": "Infraestrutura Digital",
+        "description": "Infraestrutura Digital: competência prática da jornada.",
+        "categoryId": "soberania",
+        "icon": "ID",
+        "maxLevel": 10,
+        "order": 33,
+        "status": "published"
+      },
+      {
+        "id": "tecnologias-publicas",
+        "slug": "tecnologias-publicas",
+        "name": "Tecnologias Públicas",
+        "description": "Tecnologias Públicas: competência prática da jornada.",
+        "categoryId": "soberania",
+        "icon": "TP",
+        "maxLevel": 10,
+        "order": 34,
+        "status": "published"
+      },
+      {
+        "id": "sistemas-operacionais",
+        "slug": "sistemas-operacionais",
+        "name": "Sistemas Operacionais",
+        "description": "Sistemas Operacionais: competência prática da jornada.",
+        "categoryId": "infraestrutura",
+        "icon": "SO",
+        "maxLevel": 10,
+        "order": 35,
+        "status": "published"
+      },
+      {
+        "id": "linux",
+        "slug": "linux",
+        "name": "Linux",
+        "description": "Linux: competência prática da jornada.",
+        "categoryId": "infraestrutura",
+        "icon": "LX",
+        "maxLevel": 10,
+        "order": 36,
+        "status": "published"
+      },
+      {
+        "id": "redes",
+        "slug": "redes",
+        "name": "Redes de Computadores",
+        "description": "Redes de Computadores: competência prática da jornada.",
+        "categoryId": "infraestrutura",
+        "icon": "NET",
+        "maxLevel": 10,
+        "order": 37,
+        "status": "published"
+      },
+      {
+        "id": "virtualizacao",
+        "slug": "virtualizacao",
+        "name": "Virtualização",
+        "description": "Virtualização: competência prática da jornada.",
+        "categoryId": "infraestrutura",
+        "icon": "VM",
+        "maxLevel": 10,
+        "order": 38,
+        "status": "published"
+      },
+      {
+        "id": "docker",
+        "slug": "docker",
+        "name": "Docker",
+        "description": "Docker: competência prática da jornada.",
+        "categoryId": "infraestrutura",
+        "icon": "DKR",
+        "maxLevel": 10,
+        "order": 39,
+        "status": "published"
+      },
+      {
+        "id": "kubernetes",
+        "slug": "kubernetes",
+        "name": "Kubernetes",
+        "description": "Kubernetes: competência prática da jornada.",
+        "categoryId": "infraestrutura",
+        "icon": "K8S",
+        "maxLevel": 10,
+        "order": 40,
+        "status": "published"
+      },
+      {
+        "id": "devops",
+        "slug": "devops",
+        "name": "DevOps",
+        "description": "DevOps: competência prática da jornada.",
+        "categoryId": "infraestrutura",
+        "icon": "OPS",
+        "maxLevel": 10,
+        "order": 41,
+        "status": "published"
+      },
+      {
+        "id": "cloud",
+        "slug": "cloud",
+        "name": "Computação em Nuvem",
+        "description": "Computação em Nuvem: competência prática da jornada.",
+        "categoryId": "infraestrutura",
+        "icon": "CLD",
+        "maxLevel": 10,
+        "order": 42,
+        "status": "published"
+      },
+      {
+        "id": "seguranca",
+        "slug": "seguranca",
+        "name": "Segurança da Informação",
+        "description": "Segurança da Informação: competência prática da jornada.",
+        "categoryId": "infraestrutura",
+        "icon": "SEC",
+        "maxLevel": 10,
+        "order": 43,
+        "status": "published"
+      },
+      {
+        "id": "fundamentos-computacao",
+        "slug": "fundamentos-computacao",
+        "name": "Fundamentos da Computação",
+        "description": "Fundamentos da Computação: competência prática da jornada.",
+        "categoryId": "computacao",
+        "icon": "FC",
+        "maxLevel": 10,
+        "order": 44,
+        "status": "published"
+      }
+    ],
+    "professions": [
+      {
+        "id": "desenvolvedor-jogos",
+        "slug": "desenvolvedor-jogos",
+        "name": "Desenvolvedor de Jogos",
+        "description": "Combina programação, engine, arte técnica e design para criar jogos.",
+        "suggestionThreshold": 60,
+        "minimumSkills": 2,
+        "status": "published"
+      },
+      {
+        "id": "game-designer",
+        "slug": "game-designer",
+        "name": "Game Designer",
+        "description": "Projeta sistemas, narrativas e experiências de jogo.",
+        "suggestionThreshold": 60,
+        "minimumSkills": 2,
+        "status": "published"
+      },
+      {
+        "id": "programador-unreal",
+        "slug": "programador-unreal",
+        "name": "Programador Unreal Engine",
+        "description": "Implementa gameplay, sistemas e ferramentas na Unreal Engine.",
+        "suggestionThreshold": 60,
+        "minimumSkills": 2,
+        "status": "published"
+      },
+      {
+        "id": "desenvolvedor-software",
+        "slug": "desenvolvedor-software",
+        "name": "Desenvolvedor de Software",
+        "description": "Constrói aplicações, serviços e soluções de software.",
+        "suggestionThreshold": 60,
+        "minimumSkills": 2,
+        "status": "published"
+      },
+      {
+        "id": "engenheiro-dados",
+        "slug": "engenheiro-dados",
+        "name": "Engenheiro de Dados",
+        "description": "Projeta pipelines, modelos e plataformas de dados.",
+        "suggestionThreshold": 60,
+        "minimumSkills": 2,
+        "status": "published"
+      },
+      {
+        "id": "dba",
+        "slug": "dba",
+        "name": "Administrador de Banco de Dados",
+        "description": "Administra, otimiza e protege bancos de dados relacionais.",
+        "suggestionThreshold": 60,
+        "minimumSkills": 2,
+        "status": "published"
+      },
+      {
+        "id": "cientista-dados",
+        "slug": "cientista-dados",
+        "name": "Cientista de Dados",
+        "description": "Investiga dados, constrói modelos e gera conhecimento.",
+        "suggestionThreshold": 60,
+        "minimumSkills": 2,
+        "status": "published"
+      },
+      {
+        "id": "arquiteto-dados",
+        "slug": "arquiteto-dados",
+        "name": "Arquiteto de Dados",
+        "description": "Define a estrutura e a governança dos dados na organização.",
+        "suggestionThreshold": 60,
+        "minimumSkills": 2,
+        "status": "published"
+      },
+      {
+        "id": "devops",
+        "slug": "devops",
+        "name": "Engenheiro DevOps",
+        "description": "Automatiza entrega, operação e infraestrutura como código.",
+        "suggestionThreshold": 60,
+        "minimumSkills": 2,
+        "status": "published"
+      },
+      {
+        "id": "cloud",
+        "slug": "cloud",
+        "name": "Especialista em Cloud",
+        "description": "Projeta e opera plataformas em nuvem.",
+        "suggestionThreshold": 60,
+        "minimumSkills": 2,
+        "status": "published"
+      },
+      {
+        "id": "soberania-digital",
+        "slug": "soberania-digital",
+        "name": "Especialista em Soberania Digital",
+        "description": "Promove autonomia tecnológica, software livre e governança digital.",
+        "suggestionThreshold": 60,
+        "minimumSkills": 2,
+        "status": "published"
+      },
+      {
+        "id": "seguranca",
+        "slug": "seguranca",
+        "name": "Analista de Segurança da Informação",
+        "description": "Protege sistemas, redes e dados contra ameaças.",
+        "suggestionThreshold": 60,
+        "minimumSkills": 2,
+        "status": "published"
+      }
+    ],
+    "trackTerritories": [
+      {
+        "territoryId": "jogos",
+        "trackId": "fundamentos-jogos",
+        "order": 1,
+        "mapX": 50,
+        "mapY": 50
+      },
+      {
+        "territoryId": "jogos",
+        "trackId": "game-design",
+        "order": 2,
+        "mapX": 50,
+        "mapY": 50
+      },
+      {
+        "territoryId": "jogos",
+        "trackId": "roteirizacao-jogos",
+        "order": 3,
+        "mapX": 50,
+        "mapY": 50
+      },
+      {
+        "territoryId": "jogos",
+        "trackId": "narrativa-mundos",
+        "order": 4,
+        "mapX": 50,
+        "mapY": 50
+      },
+      {
+        "territoryId": "jogos",
+        "trackId": "unreal-engine",
+        "order": 5,
+        "mapX": 50,
+        "mapY": 50
+      },
+      {
+        "territoryId": "jogos",
+        "trackId": "programacao-jogos",
+        "order": 6,
+        "mapX": 50,
+        "mapY": 50
+      },
+      {
+        "territoryId": "jogos",
+        "trackId": "cpp-jogos",
+        "order": 7,
+        "mapX": 50,
+        "mapY": 50
+      },
+      {
+        "territoryId": "jogos",
+        "trackId": "blueprints",
+        "order": 8,
+        "mapX": 50,
+        "mapY": 50
+      },
+      {
+        "territoryId": "jogos",
+        "trackId": "modelagem-animacao",
+        "order": 9,
+        "mapX": 50,
+        "mapY": 50
+      },
+      {
+        "territoryId": "jogos",
+        "trackId": "computacao-grafica-jogos",
+        "order": 10,
+        "mapX": 50,
+        "mapY": 50
+      },
+      {
+        "territoryId": "computacao",
+        "trackId": "fundamentos-computacao",
+        "order": 1,
+        "mapX": 50,
+        "mapY": 50
+      },
+      {
+        "territoryId": "computacao",
+        "trackId": "logica-programacao",
+        "order": 2,
+        "mapX": 50,
+        "mapY": 50
+      },
+      {
+        "territoryId": "computacao",
+        "trackId": "algoritmos-estruturas",
+        "order": 3,
+        "mapX": 50,
+        "mapY": 50
+      },
+      {
+        "territoryId": "computacao",
+        "trackId": "programacao",
+        "order": 4,
+        "mapX": 50,
+        "mapY": 50
+      },
+      {
+        "territoryId": "computacao",
+        "trackId": "poo",
+        "order": 5,
+        "mapX": 50,
+        "mapY": 50
+      },
+      {
+        "territoryId": "computacao",
+        "trackId": "engenharia-software",
+        "order": 6,
+        "mapX": 50,
+        "mapY": 50
+      },
+      {
+        "territoryId": "computacao",
+        "trackId": "arquitetura-sistemas",
+        "order": 7,
+        "mapX": 50,
+        "mapY": 50
+      },
+      {
+        "territoryId": "computacao",
+        "trackId": "computacao-grafica",
+        "order": 8,
+        "mapX": 50,
+        "mapY": 50
+      },
+      {
+        "territoryId": "jogos",
+        "trackId": "computacao-grafica",
+        "order": 11,
+        "mapX": 58,
+        "mapY": 50
+      },
+      {
+        "territoryId": "dados",
+        "trackId": "fundamentos-banco",
+        "order": 1,
+        "mapX": 50,
+        "mapY": 50
+      },
+      {
+        "territoryId": "dados",
+        "trackId": "modelagem-dados",
+        "order": 2,
+        "mapX": 50,
+        "mapY": 50
+      },
+      {
+        "territoryId": "dados",
+        "trackId": "modelagem-normalizacao",
+        "order": 3,
+        "mapX": 50,
+        "mapY": 50
+      },
+      {
+        "territoryId": "dados",
+        "trackId": "sql",
+        "order": 4,
+        "mapX": 50,
+        "mapY": 50
+      },
+      {
+        "territoryId": "dados",
+        "trackId": "desenvolvimento-banco",
+        "order": 5,
+        "mapX": 50,
+        "mapY": 50
+      },
+      {
+        "territoryId": "dados",
+        "trackId": "administracao-banco",
+        "order": 6,
+        "mapX": 50,
+        "mapY": 50
+      },
+      {
+        "territoryId": "dados",
+        "trackId": "postgresql",
+        "order": 7,
+        "mapX": 50,
+        "mapY": 50
+      },
+      {
+        "territoryId": "dados",
+        "trackId": "oracle",
+        "order": 8,
+        "mapX": 50,
+        "mapY": 50
+      },
+      {
+        "territoryId": "dados",
+        "trackId": "engenharia-dados",
+        "order": 9,
+        "mapX": 50,
+        "mapY": 50
+      },
+      {
+        "territoryId": "dados",
+        "trackId": "ciencia-dados",
+        "order": 10,
+        "mapX": 50,
+        "mapY": 50
+      },
+      {
+        "territoryId": "dados",
+        "trackId": "analise-dados",
+        "order": 11,
+        "mapX": 50,
+        "mapY": 50
+      },
+      {
+        "territoryId": "dados",
+        "trackId": "data-warehouse-bi",
+        "order": 12,
+        "mapX": 50,
+        "mapY": 50
+      },
+      {
+        "territoryId": "soberania",
+        "trackId": "fundamentos-soberania",
+        "order": 1,
+        "mapX": 50,
+        "mapY": 50
+      },
+      {
+        "territoryId": "soberania",
+        "trackId": "software-livre",
+        "order": 2,
+        "mapX": 50,
+        "mapY": 50
+      },
+      {
+        "territoryId": "soberania",
+        "trackId": "infraestrutura-digital",
+        "order": 3,
+        "mapX": 50,
+        "mapY": 50
+      },
+      {
+        "territoryId": "soberania",
+        "trackId": "soberania-dados",
+        "order": 4,
+        "mapX": 50,
+        "mapY": 50
+      },
+      {
+        "territoryId": "soberania",
+        "trackId": "dependencia-tecnologica",
+        "order": 5,
+        "mapX": 50,
+        "mapY": 50
+      },
+      {
+        "territoryId": "soberania",
+        "trackId": "governanca-digital",
+        "order": 6,
+        "mapX": 50,
+        "mapY": 50
+      },
+      {
+        "territoryId": "soberania",
+        "trackId": "seguranca-autonomia",
+        "order": 7,
+        "mapX": 50,
+        "mapY": 50
+      },
+      {
+        "territoryId": "soberania",
+        "trackId": "tecnologias-publicas",
+        "order": 8,
+        "mapX": 50,
+        "mapY": 50
+      },
+      {
+        "territoryId": "infraestrutura",
+        "trackId": "sistemas-operacionais",
+        "order": 1,
+        "mapX": 50,
+        "mapY": 50
+      },
+      {
+        "territoryId": "infraestrutura",
+        "trackId": "linux",
+        "order": 2,
+        "mapX": 50,
+        "mapY": 50
+      },
+      {
+        "territoryId": "infraestrutura",
+        "trackId": "redes",
+        "order": 3,
+        "mapX": 50,
+        "mapY": 50
+      },
+      {
+        "territoryId": "infraestrutura",
+        "trackId": "administracao-sistemas",
+        "order": 4,
+        "mapX": 50,
+        "mapY": 50
+      },
+      {
+        "territoryId": "infraestrutura",
+        "trackId": "virtualizacao",
+        "order": 5,
+        "mapX": 50,
+        "mapY": 50
+      },
+      {
+        "territoryId": "infraestrutura",
+        "trackId": "docker",
+        "order": 6,
+        "mapX": 50,
+        "mapY": 50
+      },
+      {
+        "territoryId": "infraestrutura",
+        "trackId": "kubernetes",
+        "order": 7,
+        "mapX": 50,
+        "mapY": 50
+      },
+      {
+        "territoryId": "infraestrutura",
+        "trackId": "devops",
+        "order": 8,
+        "mapX": 50,
+        "mapY": 50
+      },
+      {
+        "territoryId": "infraestrutura",
+        "trackId": "cloud",
+        "order": 9,
+        "mapX": 50,
+        "mapY": 50
+      },
+      {
+        "territoryId": "infraestrutura",
+        "trackId": "seguranca-informacao",
+        "order": 10,
+        "mapX": 50,
+        "mapY": 50
+      }
+    ],
+    "trackQuests": [
+      {
+        "trackId": "programacao-jogos",
+        "questId": "desenvolvimento",
+        "order": 1,
+        "required": true
+      },
+      {
+        "trackId": "engenharia-software",
+        "questId": "desenvolvimento",
+        "order": 1,
+        "required": true
+      },
+      {
+        "trackId": "modelagem-dados",
+        "questId": "normaliza",
+        "order": 1,
+        "required": true
+      },
+      {
+        "trackId": "modelagem-normalizacao",
+        "questId": "normaliza",
+        "order": 1,
+        "required": true
+      },
+      {
+        "trackId": "sql",
+        "questId": "sql",
+        "order": 1,
+        "required": true
+      },
+      {
+        "trackId": "administracao-banco",
+        "questId": "postgresql-admin",
+        "order": 1,
+        "required": true
+      }
+    ],
+    "trackSkills": [
+      {
+        "trackId": "fundamentos-jogos",
+        "skillId": "fundamentos-jogos",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "fundamentos-jogos",
+        "skillId": "game-design",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "game-design",
+        "skillId": "game-design",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "game-design",
+        "skillId": "roteirizacao",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "game-design",
+        "skillId": "narrativa",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "roteirizacao-jogos",
+        "skillId": "roteirizacao",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "roteirizacao-jogos",
+        "skillId": "narrativa",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "narrativa-mundos",
+        "skillId": "narrativa",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "narrativa-mundos",
+        "skillId": "roteirizacao",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "unreal-engine",
+        "skillId": "unreal-engine",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "unreal-engine",
+        "skillId": "blueprints",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "unreal-engine",
+        "skillId": "cpp",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "programacao-jogos",
+        "skillId": "programacao",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "programacao-jogos",
+        "skillId": "logica-programacao",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "programacao-jogos",
+        "skillId": "cpp",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "cpp-jogos",
+        "skillId": "cpp",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "cpp-jogos",
+        "skillId": "programacao",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "blueprints",
+        "skillId": "blueprints",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "blueprints",
+        "skillId": "unreal-engine",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "modelagem-animacao",
+        "skillId": "computacao-grafica",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "modelagem-animacao",
+        "skillId": "level-design",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "computacao-grafica-jogos",
+        "skillId": "computacao-grafica",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "fundamentos-computacao",
+        "skillId": "fundamentos-computacao",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "fundamentos-computacao",
+        "skillId": "logica-programacao",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "logica-programacao",
+        "skillId": "logica-programacao",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "logica-programacao",
+        "skillId": "programacao",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "algoritmos-estruturas",
+        "skillId": "logica-programacao",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "algoritmos-estruturas",
+        "skillId": "programacao",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "programacao",
+        "skillId": "programacao",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "programacao",
+        "skillId": "poo",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "programacao",
+        "skillId": "versionamento",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "poo",
+        "skillId": "poo",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "poo",
+        "skillId": "programacao",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "poo",
+        "skillId": "engenharia-software",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "engenharia-software",
+        "skillId": "engenharia-software",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "engenharia-software",
+        "skillId": "arquitetura-sistemas",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "engenharia-software",
+        "skillId": "versionamento",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "engenharia-software",
+        "skillId": "apis",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "arquitetura-sistemas",
+        "skillId": "arquitetura-sistemas",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "arquitetura-sistemas",
+        "skillId": "engenharia-software",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "computacao-grafica",
+        "skillId": "computacao-grafica",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "fundamentos-banco",
+        "skillId": "modelagem-dados",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "fundamentos-banco",
+        "skillId": "sql-basico",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "modelagem-dados",
+        "skillId": "modelagem-dados",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "modelagem-dados",
+        "skillId": "normalizacao",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "modelagem-normalizacao",
+        "skillId": "modelagem-dados",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "modelagem-normalizacao",
+        "skillId": "normalizacao",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "sql",
+        "skillId": "sql-basico",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "sql",
+        "skillId": "sql-avancado",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "desenvolvimento-banco",
+        "skillId": "sql-avancado",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "desenvolvimento-banco",
+        "skillId": "apis",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "desenvolvimento-banco",
+        "skillId": "desenvolvedor",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "administracao-banco",
+        "skillId": "administracao-banco",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "administracao-banco",
+        "skillId": "postgresql-admin",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "postgresql",
+        "skillId": "postgresql-admin",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "postgresql",
+        "skillId": "administracao-banco",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "oracle",
+        "skillId": "oracle",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "oracle",
+        "skillId": "administracao-banco",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "engenharia-dados",
+        "skillId": "engenharia-dados",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "engenharia-dados",
+        "skillId": "modelagem-dados",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "engenharia-dados",
+        "skillId": "sql-avancado",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "ciencia-dados",
+        "skillId": "ciencia-dados",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "ciencia-dados",
+        "skillId": "analise-dados",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "ciencia-dados",
+        "skillId": "sql-avancado",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "analise-dados",
+        "skillId": "analise-dados",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "analise-dados",
+        "skillId": "sql-avancado",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "data-warehouse-bi",
+        "skillId": "data-warehouse",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "data-warehouse-bi",
+        "skillId": "analise-dados",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "data-warehouse-bi",
+        "skillId": "modelagem-dados",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "fundamentos-soberania",
+        "skillId": "soberania-digital",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "fundamentos-soberania",
+        "skillId": "infraestrutura-digital",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "software-livre",
+        "skillId": "software-livre",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "software-livre",
+        "skillId": "tecnologias-publicas",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "infraestrutura-digital",
+        "skillId": "infraestrutura-digital",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "infraestrutura-digital",
+        "skillId": "redes",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "soberania-dados",
+        "skillId": "soberania-digital",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "soberania-dados",
+        "skillId": "governanca-digital",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "dependencia-tecnologica",
+        "skillId": "soberania-digital",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "dependencia-tecnologica",
+        "skillId": "software-livre",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "governanca-digital",
+        "skillId": "governanca-digital",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "governanca-digital",
+        "skillId": "tecnologias-publicas",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "seguranca-autonomia",
+        "skillId": "seguranca",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "seguranca-autonomia",
+        "skillId": "infraestrutura-digital",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "tecnologias-publicas",
+        "skillId": "tecnologias-publicas",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "tecnologias-publicas",
+        "skillId": "software-livre",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "sistemas-operacionais",
+        "skillId": "sistemas-operacionais",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "sistemas-operacionais",
+        "skillId": "linux",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "linux",
+        "skillId": "linux",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "linux",
+        "skillId": "sistemas-operacionais",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "redes",
+        "skillId": "redes",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "redes",
+        "skillId": "seguranca",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "administracao-sistemas",
+        "skillId": "sistemas-operacionais",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "administracao-sistemas",
+        "skillId": "linux",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "administracao-sistemas",
+        "skillId": "redes",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "virtualizacao",
+        "skillId": "virtualizacao",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "virtualizacao",
+        "skillId": "sistemas-operacionais",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "docker",
+        "skillId": "docker",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "docker",
+        "skillId": "linux",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "kubernetes",
+        "skillId": "kubernetes",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "kubernetes",
+        "skillId": "docker",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "devops",
+        "skillId": "devops",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "devops",
+        "skillId": "docker",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "devops",
+        "skillId": "kubernetes",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "devops",
+        "skillId": "cloud",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "cloud",
+        "skillId": "cloud",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "cloud",
+        "skillId": "kubernetes",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "cloud",
+        "skillId": "redes",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "seguranca-informacao",
+        "skillId": "seguranca",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "seguranca-informacao",
+        "skillId": "redes",
+        "targetLevel": 4,
+        "weight": 1
+      },
+      {
+        "trackId": "seguranca-informacao",
+        "skillId": "linux",
+        "targetLevel": 4,
+        "weight": 1
+      }
+    ],
+    "questSkills": [
+      {
+        "questId": "normaliza",
+        "skillId": "modelagem-dados",
+        "levelDelta": 1
+      },
+      {
+        "questId": "normaliza",
+        "skillId": "normalizacao",
+        "levelDelta": 1
+      },
+      {
+        "questId": "normaliza",
+        "skillId": "sql-basico",
+        "levelDelta": 1
+      },
+      {
+        "questId": "sql",
+        "skillId": "sql-basico",
+        "levelDelta": 1
+      },
+      {
+        "questId": "sql",
+        "skillId": "sql-avancado",
+        "levelDelta": 1
+      },
+      {
+        "questId": "postgresql-admin",
+        "skillId": "postgresql-admin",
+        "levelDelta": 1
+      },
+      {
+        "questId": "postgresql-admin",
+        "skillId": "administracao-banco",
+        "levelDelta": 1
+      },
+      {
+        "questId": "desenvolvimento",
+        "skillId": "programacao",
+        "levelDelta": 1
+      },
+      {
+        "questId": "desenvolvimento",
+        "skillId": "apis",
+        "levelDelta": 1
+      },
+      {
+        "questId": "desenvolvimento",
+        "skillId": "desenvolvedor",
+        "levelDelta": 1
+      }
+    ],
+    "professionSkills": [
+      {
+        "professionId": "desenvolvedor-jogos",
+        "skillId": "unreal-engine",
+        "weight": 2,
+        "targetLevel": 5
+      },
+      {
+        "professionId": "desenvolvedor-jogos",
+        "skillId": "cpp",
+        "weight": 2,
+        "targetLevel": 5
+      },
+      {
+        "professionId": "desenvolvedor-jogos",
+        "skillId": "computacao-grafica",
+        "weight": 1,
+        "targetLevel": 4
+      },
+      {
+        "professionId": "desenvolvedor-jogos",
+        "skillId": "game-design",
+        "weight": 1,
+        "targetLevel": 4
+      },
+      {
+        "professionId": "desenvolvedor-jogos",
+        "skillId": "roteirizacao",
+        "weight": 1,
+        "targetLevel": 3
+      },
+      {
+        "professionId": "game-designer",
+        "skillId": "game-design",
+        "weight": 2,
+        "targetLevel": 5
+      },
+      {
+        "professionId": "game-designer",
+        "skillId": "roteirizacao",
+        "weight": 1,
+        "targetLevel": 4
+      },
+      {
+        "professionId": "game-designer",
+        "skillId": "narrativa",
+        "weight": 1,
+        "targetLevel": 4
+      },
+      {
+        "professionId": "game-designer",
+        "skillId": "fundamentos-jogos",
+        "weight": 1,
+        "targetLevel": 3
+      },
+      {
+        "professionId": "game-designer",
+        "skillId": "computacao-grafica",
+        "weight": 0.5,
+        "targetLevel": 3
+      },
+      {
+        "professionId": "programador-unreal",
+        "skillId": "unreal-engine",
+        "weight": 2,
+        "targetLevel": 5
+      },
+      {
+        "professionId": "programador-unreal",
+        "skillId": "cpp",
+        "weight": 2,
+        "targetLevel": 5
+      },
+      {
+        "professionId": "programador-unreal",
+        "skillId": "blueprints",
+        "weight": 1,
+        "targetLevel": 4
+      },
+      {
+        "professionId": "programador-unreal",
+        "skillId": "computacao-grafica",
+        "weight": 1,
+        "targetLevel": 3
+      },
+      {
+        "professionId": "desenvolvedor-software",
+        "skillId": "logica-programacao",
+        "weight": 1,
+        "targetLevel": 4
+      },
+      {
+        "professionId": "desenvolvedor-software",
+        "skillId": "programacao",
+        "weight": 2,
+        "targetLevel": 5
+      },
+      {
+        "professionId": "desenvolvedor-software",
+        "skillId": "poo",
+        "weight": 1,
+        "targetLevel": 4
+      },
+      {
+        "professionId": "desenvolvedor-software",
+        "skillId": "engenharia-software",
+        "weight": 1,
+        "targetLevel": 4
+      },
+      {
+        "professionId": "desenvolvedor-software",
+        "skillId": "arquitetura-sistemas",
+        "weight": 1,
+        "targetLevel": 3
+      },
+      {
+        "professionId": "desenvolvedor-software",
+        "skillId": "versionamento",
+        "weight": 0.5,
+        "targetLevel": 3
+      },
+      {
+        "professionId": "engenheiro-dados",
+        "skillId": "modelagem-dados",
+        "weight": 2,
+        "targetLevel": 5
+      },
+      {
+        "professionId": "engenheiro-dados",
+        "skillId": "sql-avancado",
+        "weight": 2,
+        "targetLevel": 5
+      },
+      {
+        "professionId": "engenheiro-dados",
+        "skillId": "engenharia-dados",
+        "weight": 2,
+        "targetLevel": 4
+      },
+      {
+        "professionId": "engenheiro-dados",
+        "skillId": "ciencia-dados",
+        "weight": 1,
+        "targetLevel": 3
+      },
+      {
+        "professionId": "engenheiro-dados",
+        "skillId": "analise-dados",
+        "weight": 1,
+        "targetLevel": 3
+      },
+      {
+        "professionId": "dba",
+        "skillId": "modelagem-dados",
+        "weight": 1,
+        "targetLevel": 4
+      },
+      {
+        "professionId": "dba",
+        "skillId": "sql-avancado",
+        "weight": 2,
+        "targetLevel": 5
+      },
+      {
+        "professionId": "dba",
+        "skillId": "administracao-banco",
+        "weight": 2,
+        "targetLevel": 5
+      },
+      {
+        "professionId": "dba",
+        "skillId": "postgresql-admin",
+        "weight": 2,
+        "targetLevel": 5
+      },
+      {
+        "professionId": "dba",
+        "skillId": "oracle",
+        "weight": 1,
+        "targetLevel": 3
+      },
+      {
+        "professionId": "cientista-dados",
+        "skillId": "ciencia-dados",
+        "weight": 2,
+        "targetLevel": 5
+      },
+      {
+        "professionId": "cientista-dados",
+        "skillId": "analise-dados",
+        "weight": 2,
+        "targetLevel": 4
+      },
+      {
+        "professionId": "cientista-dados",
+        "skillId": "sql-avancado",
+        "weight": 1,
+        "targetLevel": 4
+      },
+      {
+        "professionId": "cientista-dados",
+        "skillId": "modelagem-dados",
+        "weight": 1,
+        "targetLevel": 4
+      },
+      {
+        "professionId": "cientista-dados",
+        "skillId": "engenharia-dados",
+        "weight": 1,
+        "targetLevel": 3
+      },
+      {
+        "professionId": "arquiteto-dados",
+        "skillId": "modelagem-dados",
+        "weight": 2,
+        "targetLevel": 5
+      },
+      {
+        "professionId": "arquiteto-dados",
+        "skillId": "engenharia-dados",
+        "weight": 2,
+        "targetLevel": 4
+      },
+      {
+        "professionId": "arquiteto-dados",
+        "skillId": "data-warehouse",
+        "weight": 2,
+        "targetLevel": 4
+      },
+      {
+        "professionId": "arquiteto-dados",
+        "skillId": "sql-avancado",
+        "weight": 1,
+        "targetLevel": 4
+      },
+      {
+        "professionId": "arquiteto-dados",
+        "skillId": "arquitetura-sistemas",
+        "weight": 1,
+        "targetLevel": 3
+      },
+      {
+        "professionId": "devops",
+        "skillId": "linux",
+        "weight": 2,
+        "targetLevel": 5
+      },
+      {
+        "professionId": "devops",
+        "skillId": "docker",
+        "weight": 2,
+        "targetLevel": 5
+      },
+      {
+        "professionId": "devops",
+        "skillId": "kubernetes",
+        "weight": 2,
+        "targetLevel": 4
+      },
+      {
+        "professionId": "devops",
+        "skillId": "cloud",
+        "weight": 1,
+        "targetLevel": 4
+      },
+      {
+        "professionId": "devops",
+        "skillId": "devops",
+        "weight": 2,
+        "targetLevel": 5
+      },
+      {
+        "professionId": "devops",
+        "skillId": "seguranca",
+        "weight": 1,
+        "targetLevel": 3
+      },
+      {
+        "professionId": "cloud",
+        "skillId": "cloud",
+        "weight": 2,
+        "targetLevel": 5
+      },
+      {
+        "professionId": "cloud",
+        "skillId": "kubernetes",
+        "weight": 2,
+        "targetLevel": 4
+      },
+      {
+        "professionId": "cloud",
+        "skillId": "docker",
+        "weight": 1,
+        "targetLevel": 4
+      },
+      {
+        "professionId": "cloud",
+        "skillId": "redes",
+        "weight": 1,
+        "targetLevel": 4
+      },
+      {
+        "professionId": "cloud",
+        "skillId": "seguranca",
+        "weight": 1,
+        "targetLevel": 3
+      },
+      {
+        "professionId": "soberania-digital",
+        "skillId": "soberania-digital",
+        "weight": 2,
+        "targetLevel": 5
+      },
+      {
+        "professionId": "soberania-digital",
+        "skillId": "software-livre",
+        "weight": 2,
+        "targetLevel": 4
+      },
+      {
+        "professionId": "soberania-digital",
+        "skillId": "governanca-digital",
+        "weight": 2,
+        "targetLevel": 4
+      },
+      {
+        "professionId": "soberania-digital",
+        "skillId": "infraestrutura-digital",
+        "weight": 1,
+        "targetLevel": 4
+      },
+      {
+        "professionId": "soberania-digital",
+        "skillId": "tecnologias-publicas",
+        "weight": 1,
+        "targetLevel": 3
+      },
+      {
+        "professionId": "seguranca",
+        "skillId": "seguranca",
+        "weight": 2,
+        "targetLevel": 5
+      },
+      {
+        "professionId": "seguranca",
+        "skillId": "redes",
+        "weight": 2,
+        "targetLevel": 4
+      },
+      {
+        "professionId": "seguranca",
+        "skillId": "linux",
+        "weight": 1,
+        "targetLevel": 4
+      },
+      {
+        "professionId": "seguranca",
+        "skillId": "cloud",
+        "weight": 1,
+        "targetLevel": 3
+      },
+      {
+        "professionId": "seguranca",
+        "skillId": "docker",
+        "weight": 1,
+        "targetLevel": 3
+      }
+    ],
+    "trackPrerequisites": [
+      {
+        "trackId": "sql",
+        "prerequisiteTrackId": "modelagem-normalizacao"
+      },
+      {
+        "trackId": "administracao-banco",
+        "prerequisiteTrackId": "sql"
+      },
+      {
+        "trackId": "postgresql",
+        "prerequisiteTrackId": "administracao-banco"
+      }
+    ]
+  },
+  "questCatalog": {
+    "campaigns": [
+      {
+        "id": "jornada-do-conhecimento",
+        "slug": "jornada-do-conhecimento",
+        "name": "Jornada do Conhecimento",
+        "description": "Uma trilha de desafios para evoluir em dados e tecnologia.",
+        "imageId": null,
+        "order": 1,
+        "active": true,
+        "createdAt": "2026-11-19T15:40:06.399Z",
+        "updatedAt": "2026-11-19T15:40:06.399Z"
+      }
+    ],
+    "quests": [
+      {
+        "id": "normaliza",
+        "campaignId": "jornada-do-conhecimento",
+        "slug": "normaliza",
+        "name": "NORMALIZA!",
+        "description": "Organize uma cidade de dados e domine a Primeira, a Segunda e a Terceira Forma Normal.",
+        "objective": "",
+        "category": "Normalização",
+        "difficulty": 2,
+        "order": 1,
+        "xpReward": 150,
+        "maxScore": 400,
+        "moduleKey": "normaliza",
+        "entryPath": "#/cidade",
+        "imageId": null,
+        "attributeRewards": {
+          "sql-basico": 1,
+          "sql-avancado": 1
+        },
+        "isOptional": false,
+        "status": "published",
+        "active": true,
+        "createdAt": "2026-11-19T15:40:06.399Z",
+        "updatedAt": "2026-11-19T15:40:06.399Z"
+      },
+      {
+        "id": "sql",
+        "campaignId": "jornada-do-conhecimento",
+        "slug": "sql",
+        "name": "SQL",
+        "description": "Consultas, filtros e manipulação de dados.",
+        "objective": "",
+        "category": "Linguagem SQL",
+        "difficulty": 2,
+        "order": 2,
+        "xpReward": 100,
+        "maxScore": 100,
+        "moduleKey": "sql",
+        "entryPath": null,
+        "imageId": null,
+        "attributeRewards": {
+          "sql-avancado": 1,
+          "desenvolvedor": 1
+        },
+        "isOptional": false,
+        "status": "published",
+        "active": true,
+        "createdAt": "2026-11-19T15:40:06.399Z",
+        "updatedAt": "2026-11-19T15:40:06.399Z"
+      },
+      {
+        "id": "postgresql-admin",
+        "campaignId": "jornada-do-conhecimento",
+        "slug": "postgresql-admin",
+        "name": "PostgreSQL Admin",
+        "description": "Administração, desempenho e segurança de dados.",
+        "objective": "",
+        "category": "Administração",
+        "difficulty": 3,
+        "order": 3,
+        "xpReward": 120,
+        "maxScore": 100,
+        "moduleKey": "postgresql-admin",
+        "entryPath": null,
+        "imageId": null,
+        "attributeRewards": {
+          "postgresql-admin": 2,
+          "sql-avancado": 1
+        },
+        "isOptional": false,
+        "status": "published",
+        "active": true,
+        "createdAt": "2026-11-19T15:40:06.399Z",
+        "updatedAt": "2026-11-19T15:40:06.399Z"
+      },
+      {
+        "id": "desenvolvimento",
+        "campaignId": "jornada-do-conhecimento",
+        "slug": "desenvolvimento",
+        "name": "Desenvolvimento de aplicações",
+        "description": "Aplicações conectadas a dados reais.",
+        "objective": "",
+        "category": "Desenvolvimento",
+        "difficulty": 4,
+        "order": 4,
+        "xpReward": 140,
+        "maxScore": 100,
+        "moduleKey": "desenvolvimento",
+        "entryPath": null,
+        "imageId": null,
+        "attributeRewards": {
+          "desenvolvedor": 2
+        },
+        "isOptional": false,
+        "status": "published",
+        "active": true,
+        "createdAt": "2026-11-19T15:40:06.399Z",
+        "updatedAt": "2026-11-19T15:40:06.399Z"
+      }
+    ],
+    "dependencies": [
+      {
+        "questId": "sql",
+        "prerequisiteId": "normaliza"
+      },
+      {
+        "questId": "postgresql-admin",
+        "prerequisiteId": "sql"
+      },
+      {
+        "questId": "desenvolvimento",
+        "prerequisiteId": "postgresql-admin"
+      }
+    ]
+  }
+}

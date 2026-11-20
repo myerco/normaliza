@@ -140,6 +140,20 @@
       await waitFor(() => doc.querySelector('.form-success'), 'perfil salvo');
       check('edição de nome é aplicada', doc.querySelector('.profile-card h2').textContent === 'Ana Maria');
 
+      win.location.hash = '#/habilidades';
+      await waitFor(() => doc.querySelector('.skills-page'), 'página de habilidades');
+      check('habilidades listam competências', doc.querySelectorAll('.skill-card').length >= 10);
+      check('habilidades mostram nível', Boolean(doc.querySelector('.skill-level')));
+
+      win.location.hash = '#/especializacoes';
+      await waitFor(() => doc.querySelector('.specializations-page'), 'página de especializações');
+      check('especializações calculam afinidade', doc.querySelectorAll('.specialization-card').length >= 10);
+      check('especializações não criam classe fixa', Boolean(doc.querySelector('.specialization-suggested, .specializations-list')));
+
+      win.location.hash = '#/perfil';
+      await waitFor(() => doc.querySelector('.profile-layout'), 'retorno ao perfil');
+      check('perfil mostra área de especialização', Boolean(doc.querySelector('.profile-learning')));
+
       doc.querySelector('.profile-actions .btn--ghost + .btn--ghost')?.click();
       await waitFor(() => Boolean(doc.querySelector('#player-name')), 'seleção de jogadores');
       check('troca de jogador abre identificação', Boolean(doc.querySelector('.profile-picker')));

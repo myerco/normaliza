@@ -58,6 +58,68 @@ test('toHash gera as rotas esperadas', () => {
   );
 });
 
+test('rotas do mapa de conhecimento', () => {
+  assertDeepEqual(parseRoute('#/mapa'), { screen: 'worldMap', buildingId: null });
+  assertDeepEqual(parseRoute('#/arvore'), { screen: 'worldMap', buildingId: null });
+  assertDeepEqual(parseRoute('#/territorio/dados'), {
+    screen: 'territory',
+    territoryId: 'dados',
+    buildingId: null
+  });
+  assertDeepEqual(parseRoute('#/trilha/modelagem-normalizacao'), {
+    screen: 'track',
+    trackId: 'modelagem-normalizacao',
+    buildingId: null
+  });
+  assertDeepEqual(parseRoute('#/quest/normaliza'), {
+    screen: 'questDetail',
+    questId: 'normaliza',
+    buildingId: null
+  });
+  assertEqual(toHash({ screen: 'worldMap' }), '#/mapa');
+  assertEqual(
+    toHash({ screen: 'territory', territoryId: 'dados' }),
+    '#/territorio/dados'
+  );
+  assertEqual(
+    toHash({ screen: 'track', trackId: 'modelagem-normalizacao' }),
+    '#/trilha/modelagem-normalizacao'
+  );
+  assertEqual(
+    toHash({ screen: 'questDetail', questId: 'normaliza' }),
+    '#/quest/normaliza'
+  );
+  assertDeepEqual(parseRoute('#/habilidades'), { screen: 'skills', buildingId: null });
+  assertDeepEqual(parseRoute('#/especializacoes'), {
+    screen: 'specializations',
+    buildingId: null
+  });
+  assertEqual(toHash({ screen: 'skills' }), '#/habilidades');
+  assertEqual(toHash({ screen: 'specializations' }), '#/especializacoes');
+  assertDeepEqual(parseRoute('#/admin/mundo'), { screen: 'adminWorld', buildingId: null });
+  assertEqual(toHash({ screen: 'adminWorld' }), '#/admin/mundo');
+});
+
+test('rotas públicas, autenticação e área do jogador', () => {
+  assertDeepEqual(parseRoute('#/login'), { screen: 'login', buildingId: null });
+  assertDeepEqual(parseRoute('#/registro'), { screen: 'register', buildingId: null });
+  assertDeepEqual(parseRoute('#/recuperar-senha'), { screen: 'recover', buildingId: null });
+  assertDeepEqual(parseRoute('#/onboarding'), { screen: 'onboarding', buildingId: null });
+  assertDeepEqual(parseRoute('#/jogador'), { screen: 'journey', buildingId: null });
+  assertDeepEqual(parseRoute('#/jogador/mundo'), { screen: 'worldMap', buildingId: null });
+  assertDeepEqual(parseRoute('#/jogador/habilidades'), { screen: 'skills', buildingId: null });
+  assertDeepEqual(parseRoute('#/jogador/quest/normaliza'), {
+    screen: 'questDetail',
+    questId: 'normaliza',
+    buildingId: null
+  });
+  assertEqual(toHash({ screen: 'login' }), '#/login');
+  assertEqual(toHash({ screen: 'register' }), '#/registro');
+  assertEqual(toHash({ screen: 'recover' }), '#/recuperar-senha');
+  assertEqual(toHash({ screen: 'onboarding' }), '#/onboarding');
+  assertEqual(toHash({ screen: 'journey' }), '#/jogador');
+});
+
 test('rota com edifício faz round-trip', () => {
   const route = { screen: 'city', buildingId: 'produto' };
   assertDeepEqual(parseRoute(toHash(route)), route);

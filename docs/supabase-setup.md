@@ -1,6 +1,6 @@
 # Configuração do Supabase
 
-O NORMALIZA! usa Supabase para identidade anônima, perfis, ranking, tentativas e validação oficial de resultados. O frontend no GitHub Pages usa somente a URL do projeto e a publishable key pública.
+O NORMALIZA! usa Supabase Auth para identidade, perfis, ranking, tentativas e validação oficial de resultados. O User é separado do Player. O frontend no GitHub Pages usa somente a URL do projeto e a publishable key pública.
 
 ## 1. Configuração pública
 
@@ -19,26 +19,33 @@ Nunca coloque no frontend:
 - secret key;
 - qualquer credencial administrativa.
 
-## 2. Auth anônimo
+## 2. Auth por e-mail e senha
 
 No Dashboard:
 
 1. Abra **Authentication → Providers**.
-2. Ative **Anonymous sign-ins**.
-3. Confirme que o projeto correto está selecionado.
-4. Verifique em `/auth/v1/settings` que `external.anonymous_users` está `true`.
+2. Ative **Email** e configure confirmação de e-mail e SMTP.
+3. Revise **Authentication → URL Configuration** para os redirecionamentos de confirmação e recuperação.
+4. Mantenha **Anonymous sign-ins** apenas se for necessário migrar sessões antigas.
 
-O jogador não informa e-mail, CPF ou telefone. O perfil é vinculado ao navegador.
+O User é a identidade de autenticação (`auth.users`). O Player é associado por `players.owner_id` e contém nome, bio, avatar, nível e XP. A senha nunca é armazenada em `players`.
 
-Recomenda-se configurar CAPTCHA invisível/Turnstile ou rate limit adequado para reduzir abuso do endpoint anônimo.
+Contas anônimas existentes devem ser convertidas para e-mail/senha ou passar por um fluxo de reivindicação de Player. Recomenda-se CAPTCHA/Turnstile e rate limit em cadastro, login e recuperação.
 
 ## 3. Aplicar o schema pelo SQL Editor
 
 1. Abra o **SQL Editor** do projeto.
-2. Cole o conteúdo de `supabase/migrations/001_schema.sql` e execute.
-3. Cole o conteúdo de `supabase/migrations/002_platform.sql` e execute.
-4. Confirme que existem:
-   - `public.players`
+2. Cole e execute `001_schema.sql`.
+3. Cole e execute `002_platform.sql`.
+4. Cole e execute `003_world.sql`.
+5. Cole e execute `004_auth.sql`.
+6. Confirme que existem:
+   - `public.players` com `bio` e vínculo único por `owner_id`
+   - `public.knowledge_territories`
+   - `public.knowledge_tracks`
+   - `public.knowledge_skills`
+   - `public.knowledge_professions`
+   - `public.quests`
    - `public.phase_attempts`
    - `public.matches`
    - `public.phase_results`
@@ -125,7 +132,7 @@ Com a publishable key no frontend, tente diretamente pela API:
 - inserir um jogador em `players`;
 - consultar os dados privados de outro jogador.
 
-Essas operações devem ser bloqueadas pela RLS. As operações permitidas passam pelas Edge Functions, que verificam o JWT anônimo e o `owner_id`.
+Essas operações devem ser bloqueadas pela RLS. As operações permitidas passam pelas Edge Functions, que verificam o JWT do usuário, o Player e o `owner_id`.
 
 Teste também:
 
@@ -145,7 +152,7 @@ O frontend é estático e pode ser servido em subdiretório. As chamadas ao Supa
 - Mantenha a publishable key no `config/supabase.js` publicado.
 - Não publique `supabase/`, `tests/` ou `tools/`.
 - O Auth e as Edge Functions devem aceitar a origem do GitHub Pages. O preflight REST já foi validado com `Access-Control-Allow-Origin: *`.
-- A Configuração de Auth anônimo e o login precisam da chave publishable e de CORS.
+- A configuração de Auth por e-mail/senha e o login precisam da chave publishable e de CORS.
 
 ## 8. Limitações atuais
 

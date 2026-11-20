@@ -11,6 +11,10 @@ export function loadAuthSession() {
   return readSession();
 }
 
+export function storeAuthSession(payload) {
+  return storeSession(payload);
+}
+
 export function clearAuthSession() {
   try {
     globalThis.localStorage?.removeItem(AUTH_SESSION_KEY);
@@ -61,7 +65,7 @@ export async function ensureAuthSession() {
   return storeSession(response);
 }
 
-export async function createRemoteProfile({ playerId, name, avatarId }) {
+export async function createRemoteProfile({ playerId, name, bio = '', avatarId }) {
   const session = await ensureAuthSession();
   const response = await callFunction('create-profile', session.accessToken, {
     playerId,

@@ -32,7 +32,7 @@ export function renderAboutPage(root, { player, onBack, onHowToPlay }) {
           'A cidade guarda o histórico visual da sua evolução.'
         ]),
         article('Ranking', [
-          'Perfis são identificados por nome e avatar, sem email.',
+          'A autenticação usa e-mail e senha; o perfil público usa nome e avatar.',
           'O ranking é assíncrono e global.',
           'Resultados offline ficam pendentes até a confirmação do servidor.',
           'A pontuação oficial é validada no backend.'

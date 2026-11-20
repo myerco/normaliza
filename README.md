@@ -1,4 +1,4 @@
-﻿# Cafegeek — Jornada do Conhecimento
+# Cafegeek — Jornada do Conhecimento
 
 O NORMALIZA! é a **Quest 01** da Cafegeek, uma plataforma de aprendizagem baseada em desafios. O jogador constrói sua jornada, conclui quests e acompanha sua evolução.
 
@@ -6,6 +6,10 @@ Jogo educativo de normalização de bancos de dados. A cidade isométrica é o m
 
 ## Plataforma Cafegeek
 
+- Área pública institucional em `#/`, com apresentação, territórios, como funciona, NORMALIZA e chamadas para cadastro/login.
+- Rotas `#/login`, `#/registro` e `#/recuperar-senha`; área privada em `#/jogador` e subrotas `#/jogador/...`.
+- Separação explícita entre identidade de autenticação (User) e identidade gamificada (Player).
+- Autenticação local com e-mail/senha, hash `scrypt`, sessões no PostgreSQL e logout; Supabase Auth preparado para o cloud.
 - Tela inicial própria, com logo original em `assets/images/branding/cafegeek-logo.webp`.
 - Navegação para jornada, desafios, ranking e conquistas.
 - Apresentação da Quest 01 — NORMALIZA!.
@@ -14,8 +18,14 @@ Jogo educativo de normalização de bancos de dados. A cidade isométrica é o m
 - Catálogo administrável de arquétipos e atributos com valores iniciais de 1 a 10.
 - Campanha Jornada do Conhecimento com quatro quests, dependências e estados individuais.
 - Página de jornada com quests disponíveis, bloqueadas, em andamento e concluídas.
-- Árvore de conhecimento visual por áreas, com nós ligados a habilidades e quests.
+- Mapa-múndi com cinco territórios, trilhas, progresso e detalhe de quest em `#/mapa`; `#/arvore` permanece como alias.
+- Catálogo de territórios, trilhas, habilidades e especializações no PostgreSQL local, com cálculo de afinidade.
+- Rotas `#/territorio/:id`, `#/trilha/:id` e `#/quest/:id`, além do mapa na página inicial.
+- NORMALIZA! posicionado na trilha Modelagem e Normalização do território Dados e Banco de Dados.
+- Tela de habilidades em `#/habilidades`, com níveis, histórico e atividades por competência.
+- Área Minha Especialização em `#/especializacoes` e no perfil, com afinidade calculada por habilidades.
 - Administração local de perfis, arquétipos, atributos, valores iniciais e imagens de personagem.
+- Administração local do mapa em `#/admin/mundo`: territórios, trilhas, habilidades, especializações, quests e relações.
 - XP, níveis, progresso para o próximo nível e histórico de evolução.
 - Atributos individuais que evoluem com recompensas de quests, limitados a 10.
 - Conquistas de personagem e histórico recente de XP/atributos.
@@ -37,8 +47,8 @@ Cada resposta incorreta traz explicação conceitual. O jogo oferece dicas, glos
 
 ## Perfis, ranking e offline
 
-- A identificação usa nome/apelido e avatar, sem e-mail, CPF ou nome completo.
-- Cada navegador pode ter vários perfis locais. O progresso de um jogador é independente.
+- A autenticação usa e-mail e senha; o perfil gamificado usa nome/apelido e avatar, sem CPF ou nome completo.
+- O User é separado do Player; no escopo inicial cada conta possui um Player, e o progresso individual é associado a ele.
 - O ranking é assíncrono e global; a pontuação oficial é validada no servidor.
 - Jogadores podem consultar posição, pontos e diferença para o próximo colocado.
 - Resultados offline ficam pendentes e são sincronizados quando o serviço volta.
@@ -49,20 +59,29 @@ Cada resposta incorreta traz explicação conceitual. O jogo oferece dicas, glos
 
 - HTML5, CSS3, JavaScript ES6+ com ES Modules.
 - SVG em camadas para a cidade e JSON para os desafios.
-- Supabase Postgres, Auth anônimo, RLS, view de leaderboard e Edge Functions.
+- Supabase Postgres, Auth por e-mail/senha, RLS, view de leaderboard e Edge Functions.
 - PostgreSQL 16, Node 22 e nginx no modo Docker Compose local.
-- `LocalStorage` para perfis, progresso, cache de ranking e fila pendente.
+- `LocalStorage` para token de sessão, cache de progresso/ranking e fila pendente.
 - Sem bundler, framework de frontend ou etapa de build.
 
 ## Arquitetura
 
 - **`src/core/`**: regras puras de 1FN, 2FN, 3FN, Fase 4, anomalias, jogadores, personagens, arquétipos, atributos, quests, XP, níveis, conquistas, perfil, ranking e progresso.
 - **`src/data/`**: validação estrutural dos JSONs.
-- **`src/services/`**: fachada de backend, provedores Supabase/local, resultados, progressão de quests, leaderboard e sincronização.
+- **`src/services/`**: fachada de backend, provedores Supabase/local, conteúdo PostgreSQL, resultados, progressão de quests, leaderboard e sincronização.
 - **`src/persistence/`**: progresso e personagens por jogador, catálogo local, quests, progressão de personagem, fila, cache e migração do legado.
-- **`src/state/` e `src/router/`**: estado e rotas por hash.
+- **`src/services/content-service.js`**: leitura e gravação do catálogo no PostgreSQL via `/api/content`.
+- **`src/services/auth-service.js`**: registro, login, logout, recuperação e vínculo User/Player nos providers local e Supabase.
+- **`src/ui/publicHome.js`** e **`src/ui/auth.js`**: página pública, login, cadastro e onboarding do jogador.
+- **`docker/api/src/content.js`**: seed e persistência das tabelas de conteúdo.
+- **`src/core/world.js`**: progresso de territórios/trilhas, vínculos quest-habilidade e afinidade de especializações.
+- **`src/persistence/worldStorage.js`**: cache/fallback local versionado do mapa-múndi.
+- **`src/ui/worldMap.js`**: mapa interativo, territórios, trilhas e detalhe de quest.
+- **`src/ui/skills.js`** e **`src/ui/specializations.js`**: habilidades e afinidade profissional.
+- **`src/ui/worldAdmin.js`**: administração local de territórios, trilhas, habilidades, especializações e quests.
+- **`src/state/` e `src/router/`**: estado e rotas por hash, incluindo páginas públicas, autenticação, área do jogador, mapa, território, trilha, quest, habilidades e administração.
 - **`src/ui/`**: início Cafegeek, jornada de quests, personagem, administração, cidade, arte isométrica detalhada em `cityArt.js`, HUD, fases, missão, identidade, perfil, ranking, conquistas, Sobre e ajuda.
-- **`data/`**: cidade, fases, missão, glossário e dicas.
+- **`data/`**: cidade, fases, missão, glossário, dicas e `content.seed.json` usado para popular o PostgreSQL.
 - **`supabase/`**: migrations, RLS e Edge Functions.
 - **`docker/` e `db/`**: API local, nginx e migrations do modo Docker Compose.
 - **`config/`**: URL/publishable key públicas e seleção de backend em `config/runtime.js`.
@@ -72,7 +91,7 @@ Cada resposta incorreta traz explicação conceitual. O jogo oferece dicas, glos
 
 ### Modelo atual implementado
 
-O diagrama abaixo representa o schema realmente disponível no PostgreSQL local e nas migrations do Supabase. A view `leaderboard` não é uma tabela; ela agrega `players` e `phase_results`. O campo `platform_quest_results.character_id` ainda não possui FK para uma tabela de personagens, pois a ficha completa do personagem permanece local nesta versão.
+O diagrama abaixo representa o schema original de ranking e progressão. O PostgreSQL local também possui as tabelas de conhecimento, personagens, habilidades, quests e especializações criadas por `db/migrations/004_world.sql`; o Supabase correspondente está em `supabase/migrations/003_world.sql`, ainda pendente de aplicação. O catálogo do mapa é semeado pela API e servido por `GET /api/content`; a administração usa `PUT /api/content` no modo Docker.
 
 ```mermaid
 erDiagram
@@ -166,9 +185,11 @@ erDiagram
 
 ### Modelo alvo planejado
 
-No modo local não existe a tabela `auth.users`; o dono é representado por um UUID de sessão. No Supabase, `players.owner_id` referencia `auth.users`.
+> Este diagrama é histórico. O modelo aprovado para territórios, trilhas, habilidades e especializações está detalhado em **Modelo do mapa de conhecimento** e prevalece sobre a parte de `KNOWLEDGE_AREAS`/`KNOWLEDGE_NODES` deste diagrama.
 
-O modelo abaixo organiza a evolução completa da plataforma: personagens, arquétipos, atributos, catálogo visual, campanhas, quests, dependências, recompensas, XP e conquistas. Ele ainda não foi migrado para o PostgreSQL; nesta versão, essas entidades estão em `LocalStorage`.
+No modo local existe uma tabela `users` com e-mail, hash de senha e status; `players.user_id` referencia essa identidade. No Supabase, `players.owner_id` referencia `auth.users` e a senha é gerenciada pelo Auth.
+
+O modelo abaixo organiza a evolução completa da plataforma: personagens, arquétipos, atributos, catálogo visual, campanhas, quests, dependências, recompensas, XP e conquistas. As entidades do mundo e quests já usam o PostgreSQL local; personagens, atributos, imagens e progressão individual ainda usam `LocalStorage` nesta versão.
 
 ```mermaid
 erDiagram
@@ -419,6 +440,45 @@ erDiagram
 
 O NORMALIZA! mantém as tabelas atuais `players`, `phase_attempts`, `matches` e `phase_results` como fonte oficial das fases e do ranking. A migração alvo deve preservar esses dados e ligar a conclusão da Quest 01 aos registros de `character_quest_progress` e `experience_history`.
 
+### Modelo do mapa de conhecimento
+
+O modelo aprovado para territórios, trilhas, habilidades e especializações foi criado no PostgreSQL local em `db/migrations/004_world.sql`. O catálogo é semeado pela API e servido ao frontend; `LocalStorage` permanece como cache/fallback offline e para dados individuais de progressão.
+
+```mermaid
+erDiagram
+    PLAYERS ||--o{ CHARACTERS : has
+    ARCHETYPES ||--o{ CHARACTERS : origin
+    CHARACTERS ||--o{ CHARACTER_SKILLS : develops
+    KNOWLEDGE_SKILLS ||--o{ CHARACTER_SKILLS : measured
+    CHARACTERS ||--o{ CHARACTER_QUEST_PROGRESS : completes
+    QUESTS ||--o{ CHARACTER_QUEST_PROGRESS : tracked
+    CHARACTERS ||--o{ CHARACTER_SKILL_HISTORY : logs
+    KNOWLEDGE_TERRITORIES ||--o{ KNOWLEDGE_TRACK_TERRITORIES : contains
+    KNOWLEDGE_TRACKS ||--o{ KNOWLEDGE_TRACK_TERRITORIES : appears
+    KNOWLEDGE_TRACKS ||--o{ QUEST_TRACKS : contains
+    QUESTS ||--o{ QUEST_TRACKS : appears
+    KNOWLEDGE_TRACKS ||--o{ KNOWLEDGE_TRACK_SKILLS : targets
+    KNOWLEDGE_SKILLS ||--o{ KNOWLEDGE_TRACK_SKILLS : targeted
+    QUESTS ||--o{ QUEST_SKILLS : develops
+    KNOWLEDGE_SKILLS ||--o{ QUEST_SKILLS : developed
+    KNOWLEDGE_PROFESSIONS ||--o{ KNOWLEDGE_PROFESSION_SKILLS : requires
+    KNOWLEDGE_SKILLS ||--o{ KNOWLEDGE_PROFESSION_SKILLS : contributes
+    QUESTS ||--o{ QUEST_PREREQUISITES : requires
+    QUESTS ||--o{ QUEST_PREREQUISITES : unlocks
+    KNOWLEDGE_TRACKS ||--o{ KNOWLEDGE_TRACK_PREREQUISITES : requires
+    KNOWLEDGE_TRACKS ||--o{ KNOWLEDGE_TRACK_PREREQUISITES : unlocks
+```
+
+- `knowledge_territories`: os cinco territórios e suas posições no mapa.
+- `knowledge_tracks`: trilhas; podem aparecer em vários territórios.
+- `knowledge_skills`: habilidades sem colunas fixas por personagem.
+- `knowledge_professions`: especializações possíveis, sem classe de personagem.
+- `quests`, `quest_tracks`, `quest_skills`, `quest_prerequisites`: catálogo e relações muitos-para-muitos.
+- `characters`, `character_skills`, `character_skill_history`, `character_quest_progress`: progresso individual.
+- `character_track_progress`, `character_territory_progress` e `character_profession_affinity`: views derivadas, sem duplicar estado.
+
+A afinidade de especialização é calculada por peso e nível-alvo das habilidades. Nenhuma especialização concede ou remove acesso a conteúdo.
+
 ## Cidade visual
 
 A cena é um SVG em camadas com ilha, parque central, ruas, calçadas, edifícios detalhados, vegetação, postes, bancos, fonte, lago, veículos e personagens. `cityScene.js` mantém seleção, extensões, links, rótulos, badges e contratos de interação; `cityArt.js` concentra a arte e os elementos urbanos. A composição é responsiva, ordenada por profundidade e respeita `prefers-reduced-motion`. Nenhuma regra de normalização ou validação depende da camada visual.
@@ -457,7 +517,7 @@ A cena é um SVG em camadas com ilha, parque central, ruas, calçadas, edifício
 │   ├── state/
 │   └── ui/
 ├── supabase/
-│   ├── migrations/001_schema.sql, 002_platform.sql
+│   ├── migrations/001_schema.sql, 002_platform.sql, 003_world.sql, 004_auth.sql
 │   └── functions/
 ├── tests/
 ├── tools/
@@ -518,6 +578,8 @@ Edite `.env` e troque `POSTGRES_PASSWORD`. O arquivo `.env` é ignorado pelo git
 
 O modo local é **independente do Supabase**, usa uma API Node mínima e começa com o ranking vazio. O nginx gera `config/runtime.js` em runtime para selecionar o provedor local.
 
+Na primeira inicialização, a API popula o catálogo de territórios, trilhas, habilidades, especializações e quests a partir de `data/content.seed.json`. O frontend lê `GET /api/content`; o administrador local salva em `PUT /api/content`. Se a API estiver indisponível, o app usa o cache em `LocalStorage` e os seeds locais como fallback.
+
 Comandos:
 
 ```text
@@ -527,9 +589,9 @@ docker compose down       # preserva o volume
 docker compose down -v    # apaga o banco local; destrutivo
 ```
 
-A API local também confirma a Quest 01 em `POST /api/quests/normaliza/complete`, mas somente quando as quatro fases já existem em `phase_results`; XP e nível são calculados no servidor e gravados uma única vez.
+A API local também expõe `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`, `GET/POST/PATCH /api/players/me` e confirma a Quest 01 em `POST /api/quests/normaliza/complete`, mas somente quando as quatro fases já existem em `phase_results`; XP e nível são calculados no servidor e gravados uma única vez.
 
-O volume local é `normaliza-pgdata`. O progresso no navegador continua em `LocalStorage`; o banco guarda os perfis e resultados compartilhados do modo local. O ranking local e o ranking Supabase não são mesclados.
+O volume local é `normaliza-pgdata`. A autenticação local usa a tabela `users` com hash `scrypt` e sessões vinculadas; o perfil do jogador usa `players.user_id`. O progresso detalhado ainda continua em `LocalStorage`; o banco guarda usuários, perfis, resultados compartilhados e o catálogo do mapa. A recuperação de senha local não envia e-mail; o Supabase Auth oferece esse fluxo no cloud.
 
 Mais detalhes: [`docs/local-development.md`](docs/local-development.md).
 
@@ -541,7 +603,7 @@ O passo a passo completo, incluindo SQL Editor, RLS, Edge Functions e CORS, est�
 
 Resumo:
 
-1. Aplicar `supabase/migrations/001_schema.sql` e `002_platform.sql` no SQL Editor.
+1. Aplicar `supabase/migrations/001_schema.sql`, `002_platform.sql`, `003_world.sql` e `004_auth.sql` no SQL Editor.
 2. Publicar as Edge Functions de `supabase/functions/`, incluindo `complete-quest`.
 3. Manter `SUPABASE_SERVICE_ROLE_KEY` apenas nos secrets do Supabase.
 4. Abrir o app e criar um perfil; o ranking ficará indisponível até o backend estar publicado.
@@ -630,19 +692,23 @@ A aplicação usa caminhos relativos e foi validada em subdiretório. Não alter
 1. **Diagnóstico:** a base era uma SPA estática do NORMALIZA!, com regras puras, persistência por navegador, backend local/Supabase e ranking de fases. A arquitetura foi evoluída sem reimplementar o jogo.
 2. **Modelo conceitual:** jogador, personagem, arquétipo, atributo, campanha, quest, progresso, XP, nível e conquista foram separados.
 3. **Modelo relacional:** o schema atual e o modelo alvo normalizado estão representados nos dois diagramas MER deste README.
-4. **Interfaces:** início Cafegeek, jornada, desafios, árvore de conhecimento, personagem, administração, perfil, ranking, conquistas, cidade, fases e missão.
-5. **Arquivos principais:** `src/core/quests.js`, `src/core/progression.js`, `src/core/knowledge.js`, `src/core/characters.js`, `src/persistence/questStorage.js`, `src/persistence/progressionStorage.js`, `src/persistence/knowledgeStorage.js`, `src/persistence/imageStorage.js`, `src/ui/knowledge.js`, `src/ui/character.js`, `src/ui/challenges.js`, `src/ui/admin.js`, `db/migrations/003_platform.sql`, `supabase/functions/complete-quest/`.
-6. **Funcionalidades:** logo original Cafegeek, Quest 01, quatro quests com dependências, personagem editável, catálogo administrável de arquétipos/atributos, imagens de personagem, árvore de conhecimento por áreas, valores 1–10, XP/níveis, evolução de atributos, conquistas e confirmação local server-side da Quest 01.
-7. **Migrations:** `001_core.sql`, `002_local.sql` e `003_platform.sql` foram aplicadas no PostgreSQL local. `001_schema.sql` e `002_platform.sql` estão preparadas no diretório `supabase/migrations/`, mas ainda não foram aplicadas no projeto cloud.
-8. **Testes:** 179 testes unitários, suítes de interação das fases, jogadores/ranking, administração, missão e progresso, 28 screenshots e verificação do backend local com autenticação, quest incompleta, idempotência e isolamento entre jogadores.
-9. **Limitações:** personagens, catálogo, imagens e progressão ainda usam `LocalStorage`; a autorização administrativa de produção, a administração de quests/recompensas e o deploy do Supabase continuam pendentes.
-10. **Próximas melhorias:** migrar personagens/atributos/quests/árvore para o banco, aplicar RLS administrativa, publicar as Edge Functions, implementar uploads de imagens com licença e adicionar ranking por XP.
+4. **Interfaces:** início Cafegeek, mapa-múndi de cinco territórios, trilhas, detalhe de quest, habilidades, especializações, jornada, desafios, personagem, administração do mapa, perfil, ranking, conquistas, cidade, fases e missão.
+5. **Arquivos principais:** `src/core/quests.js`, `src/core/progression.js`, `src/core/world.js`, `src/core/characters.js`, `src/persistence/questStorage.js`, `src/persistence/progressionStorage.js`, `src/persistence/worldStorage.js`, `src/persistence/imageStorage.js`, `src/ui/worldMap.js`, `src/ui/skills.js`, `src/ui/specializations.js`, `src/ui/worldAdmin.js`, `src/ui/character.js`, `src/ui/challenges.js`, `src/ui/admin.js`, `db/migrations/004_world.sql`, `supabase/functions/complete-quest/`.
+6. **Funcionalidades:** logo original Cafegeek, Quest 01, quatro quests com dependências, personagem editável, catálogo administrável de arquétipos/atributos, imagens de personagem, mapa-múndi com cinco territórios e trilhas, NORMALIZA na trilha Modelagem e Normalização, habilidades com histórico e atividades, especializações com afinidade, administração local de territórios/trilhas/habilidades/especializações/quests, valores 1–10, XP/níveis, evolução de atributos, conquistas e confirmação local server-side da Quest 01.
+7. **Migrations:** `001_core.sql`, `002_local.sql`, `003_platform.sql`, `004_world.sql`, `005_content_order.sql` e `006_auth.sql` foram aplicadas no PostgreSQL local. `001_schema.sql`, `002_platform.sql`, `003_world.sql` e `004_auth.sql` estão preparadas no diretório `supabase/migrations/`, mas ainda não foram aplicadas no projeto cloud.
+8. **Testes:** 188 testes unitários, suítes de interação das fases, jogadores/ranking, administração, missão e progresso, mapa/trilhas/habilidades/especializações e 32 screenshots; verificação do backend local com autenticação, catálogo PostgreSQL, quest incompleta, idempotência e isolamento entre jogadores.
+9. **Limitações:** User/Player e o perfil do jogador já usam autenticação local/PostgreSQL, mas a progressão detalhada e as imagens ainda usam `LocalStorage`; recuperação de senha local não envia e-mail; a autorização administrativa de produção e a persistência server-side de habilidades/progresso continuam pendentes.
+10. **Próximas melhorias:** migrar personagens/habilidades e progressão individual para o banco, aplicar RLS administrativa no Supabase, publicar as Edge Functions, implementar validação genérica de quests e sincronizar recompensas de habilidades no servidor.
 
 ## Limitações conhecidas
 
 - O schema e as Edge Functions do Supabase cloud ainda precisam ser aplicados/deployados.
+- O catálogo do mapa é servido pelo PostgreSQL via API; `LocalStorage` mantém cache/fallback. As tabelas `characters`, `character_skills` e progresso individual ainda não são usadas pela API.
+- User/Player, login, cadastro, logout e rotas privadas estão implementados; a progressão individual ainda é local.
+- Jogadores antigos sem `user_id` permanecem como registros legados; a associação a uma nova conta exige um fluxo de reivindicação.
+- Habilidades e especializações possuem telas e cálculo de afinidade; o catálogo do mundo é compartilhado pelo PostgreSQL, mas a progressão individual ainda é local.
 - O Compose local é um backend independente; rankings cloud e local não são mesclados.
-- Perfis são vinculados ao navegador; não há login em outro dispositivo.
+- No modo local, o token de sessão fica no navegador, mas usuários e sessões são validados no PostgreSQL; o progresso detalhado ainda é local.
 - Resultados offline usam política conservadora; tentativas/dicas offline não são verificáveis.
 - A missão especial permanece em memória.
 - O banco local depende do volume `normaliza-pgdata`; `docker compose down -v` apaga os dados.

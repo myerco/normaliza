@@ -43,7 +43,7 @@ O runtime deve indicar:
 window.__NORMALIZA_RUNTIME__ = {"backend":"local","local":{"apiBaseUrl":"/api"}};
 ```
 
-O ranking local começa vazio. Perfis locais e progresso do navegador continuam no `LocalStorage`.
+O ranking local começa vazio. O catálogo do mapa é semeado no PostgreSQL a partir de `data/content.seed.json` e servido pela API; perfis locais e progresso individual do navegador continuam no `LocalStorage`.
 
 ## Serviços
 
@@ -62,6 +62,13 @@ O ranking local começa vazio. Perfis locais e progresso do navegador continuam 
 - Executa as migrations de `db/migrations/` no start.
 - Endpoints em `/api`:
   - `POST /api/session`
+  - `POST /api/auth/register`
+  - `POST /api/auth/login`
+  - `POST /api/auth/logout`
+  - `GET /api/auth/me`
+  - `GET /api/players/me`
+  - `POST /api/players/me`
+  - `PATCH /api/players/me`
   - `GET /api/leaderboard`
   - `POST /api/profiles`
   - `PATCH /api/profiles/:id`
@@ -69,6 +76,8 @@ O ranking local começa vazio. Perfis locais e progresso do navegador continuam 
   - `POST /api/attempts/:id/hints`
   - `POST /api/attempts/:id/validations`
   - `POST /api/results`
+  - `GET /api/content`
+  - `PUT /api/content` (autenticado)
   - `POST /api/quests/normaliza/complete`
   - `GET /api/health`
 - A sessão local é um token opaco por navegador, armazenado no frontend.
@@ -106,6 +115,9 @@ O container `web` só recebe configuração pública. A senha do Postgres é usa
 - `db/migrations/001_core.sql`: tabelas, view de leaderboard e `record_phase_result`.
 - `db/migrations/002_local.sql`: sessões locais.
 - `db/migrations/003_platform.sql`: progresso de quests, XP e concessão idempotente da Quest 01.
+- `db/migrations/004_world.sql`: territórios, trilhas, habilidades, especializações, personagens e views.
+- `db/migrations/005_content_order.sql`: ordem e recompensas adicionais do catálogo de quests.
+- `db/migrations/006_auth.sql`: usuários locais, vínculo `players.user_id`, bio e sessões autenticadas.
 - O núcleo é portátil e não referencia `auth.users`.
 - A migration do Supabase cloud permanece separada em `supabase/migrations/`.
 
@@ -132,7 +144,7 @@ Restauração:
 Get-Content backup.sql | docker compose exec -T db psql -U normaliza -d normaliza
 ```
 
-O progresso dos navegadores não está no banco; ele permanece no `LocalStorage` de cada navegador.
+O catálogo do mapa, os usuários locais e os perfis de jogador estão no banco. A progressão detalhada dos navegadores ainda permanece no `LocalStorage`. A recuperação de senha local está indisponível sem serviço de e-mail; o Supabase Auth oferece esse fluxo no cloud.
 
 ## Dados e troca de backend
 

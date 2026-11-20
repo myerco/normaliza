@@ -178,6 +178,78 @@
     }
 
     const route = params.get('rota') || 'cidade';
+
+    if (['habilidades', 'especializacoes'].includes(route)) {
+      const characterId = 'demo-character';
+      localStorage.setItem(
+        `normaliza:v2:player:${playerId}:characters`,
+        JSON.stringify({
+          version: 1,
+          characters: [
+            {
+              id: characterId,
+              playerId,
+              name: 'Ana Construtora',
+              imageId: 'engenheiro',
+              archetypeId: 'engenheiro',
+              level: 3,
+              xp: 520,
+              isPrimary: true,
+              createdAt: now,
+              updatedAt: now
+            }
+          ]
+        })
+      );
+      localStorage.setItem(
+        `normaliza:v3:character:${characterId}:progression`,
+        JSON.stringify({
+          version: 2,
+          xp: 520,
+          level: 3,
+          attributes: {
+            'sql-basico': { initial: 5, current: 7 },
+            'sql-avancado': { initial: 6, current: 8 },
+            'postgresql-admin': { initial: 4, current: 5 },
+            desenvolvedor: { initial: 4, current: 6 }
+          },
+          skills: {
+            'unreal-engine': { initial: 1, current: 6 },
+            cpp: { initial: 1, current: 5 },
+            'computacao-grafica': { initial: 1, current: 3 },
+            'game-design': { initial: 1, current: 4 },
+            roteirizacao: { initial: 1, current: 3 },
+            'modelagem-dados': { initial: 1, current: 5 },
+            normalizacao: { initial: 1, current: 4 }
+          },
+          xpHistory: [],
+          attributeHistory: [],
+          skillHistory: [
+            {
+              id: 'demo-skill-1',
+              skillId: 'unreal-engine',
+              previous: 5,
+              current: 6,
+              source: 'quest',
+              sourceId: 'normaliza',
+              createdAt: now
+            },
+            {
+              id: 'demo-skill-2',
+              skillId: 'modelagem-dados',
+              previous: 4,
+              current: 5,
+              source: 'quest',
+              sourceId: 'normaliza',
+              createdAt: now
+            }
+          ],
+          achievements: ['primeiro-nivel'],
+          updatedAt: now
+        })
+      );
+    }
+
     location.replace(`../index.html?test=1#/${route}`);
   </script>
 </body>

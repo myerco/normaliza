@@ -19,6 +19,7 @@ Deno.serve(async (request) => {
     const playerId = body?.playerId;
     const name = body?.name;
     const avatarId = body?.avatarId;
+    const bio = String(body?.bio ?? '').trim().slice(0, 280);
 
     if (!isUuid(playerId)) {
       return error('Identificador de jogador inválido.', 400, 'invalid-player');
@@ -47,12 +48,25 @@ Deno.serve(async (request) => {
       return error('Este identificador pertence a outro usuário.', 403, 'forbidden');
     }
 
+    if (!existing) {
+      const { data: owned } = await supabase
+        .from('players')
+        .select('*')
+        .eq('owner_id', user.id)
+        .maybeSingle();
+
+      if (owned) {
+        return json({ profile: owned, created: false });
+      }
+    }
+
     const payload = {
       id: playerId,
       owner_id: user.id,
       name: nameValidation.name,
       name_normalized: nameValidation.nameKey,
       avatar_id: avatarId,
+      bio,
       updated_at: new Date().toISOString(),
       last_activity_at: new Date().toISOString()
     };
